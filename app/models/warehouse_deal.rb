@@ -121,7 +121,6 @@ module WarehouseDeal
       resource = Asset.new(tag: attrs[:tag], mu: attrs[:mu])
     end
     attrs[:object] = self
-
     @items << WaybillItem.new(object: self, amount: attrs[:amount],
                               resource: resource, price: attrs[:price])
   end

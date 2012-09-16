@@ -1,0 +1,16 @@
+<table>
+  <thead>
+    <tr>
+      <th>Название склада</th>
+      <th>Просмотр склада</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @places.each do |place| %>
+      <tr>
+        <td><%= place[:tag] %></td>
+        <td><%= link_to "Просмотр", warehouse_db_converters_path(place_id: place[:id]) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

@@ -156,6 +156,14 @@ Abstract::Application.routes.draw do
   end
   resources :countries, only: :index
 
+  resources :db_converters do
+    collection do
+      get 'places'
+      get 'warehouse'
+      get 'apply'
+    end
+  end
+
 # The priority is based upon order of creation:
   # first created -> highest priority.
 
