@@ -91,7 +91,7 @@ class SqlRecord
 
   def count
     raise Exception.new("Could not select from empty sql") if @sql.empty?
-    items = ActiveRecord::Base.connection.execute("SELECT count(T.*) as cnt FROM (#{@sql}) T")
+    items = ActiveRecord::Base.connection.execute("SELECT count(*) as cnt FROM (#{@sql}) as T")
     return 0 if items.count == 0
     Converter.int(items.first["cnt"])
   end

@@ -20,7 +20,7 @@ class Catalog < ActiveRecord::Base
   def price_list(filter_date, filter_tab)
     # FIXME: it's temporary solution for date comparison
     #  Rplace all datetime to date
-    self.price_lists.where{to_char(date, "YYYY-MM-DD").like("#{filter_date.strftime("%Y-%m-%d")}%")}.
+    self.price_lists.where{date.like("#{filter_date.strftime("%Y-%m-%d")}%")}.
                      where{tab.eq(filter_tab)}.first
   end
 end

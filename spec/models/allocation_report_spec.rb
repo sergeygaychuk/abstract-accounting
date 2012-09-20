@@ -235,7 +235,7 @@ describe AllocationReport do
     al3.apply
 
     als = AllocationReport.search(created: '15').all
-    als_test = AllocationReport.where{to_char(created, 'YYYY-MM-DD').like("%15%")}.all
+    als_test = AllocationReport.where{created.like("%15%")}.all
     als. =~ als_test
 
     als = AllocationReport.select_all.with_resources.search('foreman' => 'o').all

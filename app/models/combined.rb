@@ -78,11 +78,7 @@ class Combined
     def scope
       tables = klasses_i.collect do |item|
         sel = configuration.inject([]) do |mem, (key, value)|
-          if item.columns_hash[value[item.name.to_sym].to_s].type == :integer
-            mem << "to_char(#{value[item.name.to_sym]}, '999') as #{key}"
-          else
-            mem << "#{value[item.name.to_sym]} as #{key}"
-          end
+          mem << "#{value[item.name.to_sym]} as #{key}"
         end
         sel = sel.join(', ')
         item.select("id, '#{item.name}' as type, #{sel}").to_sql

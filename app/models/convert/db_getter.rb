@@ -8,6 +8,7 @@
 # Please see ./COPYING for details
 
 require "sqlite3"
+require "helpers/statable"
 
 # CREATE TABLE "shower" ("asset_id" INTEGER, "place_id" INTEGER);
 # CREATE TABLE "assoc" ("new_id" INTEGER, "old_id" INTEGER);
@@ -120,7 +121,7 @@ module Convert
         ).each do |w|
           unless DbGetter.instance.get_old_id(w.id).nil?
             res = false
-            res = w.apply if w.state == Statable::INWORK
+            res = w.apply if w.state == Helpers::Statable::INWORK
             throw "Error" unless res
           end
         end

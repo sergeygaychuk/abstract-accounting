@@ -207,7 +207,7 @@ describe WaybillReport do
     wb1.apply
 
     wbs = WaybillReport.search(created: '12').all
-    wbs_test = WaybillReport.where{to_char(created, "YYYY-MM-DD").like('%12%')}.all
+    wbs_test = WaybillReport.where{created.like('%12%')}.all
     wbs.should eq(wbs_test)
 
     wbs = WaybillReport.select_all.with_resources.search('document_id' => '1').all

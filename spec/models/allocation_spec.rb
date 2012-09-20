@@ -542,7 +542,7 @@ describe Allocation do
     Allocation.search({"created" => al1.created.strftime('%Y-%m-%d')}).should =~ [al1]
     Allocation.search({"created" => al1.created.strftime('%Y-%m-%d')[0, 4]}).
         should =~ Allocation.
-        where{to_char(created, 'YYYY-MM-DD').
+        where{created.
           like(lower("%#{al1.created.strftime('%Y-%m-%d')[0, 4]}%"))}
     Allocation.search({"created" => DateTime.now.strftime('%Y-%m-%d')}).should be_empty
 
@@ -559,7 +559,7 @@ describe Allocation do
     Allocation.search({"foreman" => al1.foreman.tag[0, 4]}).
         should =~ Allocation.joins{deal.rules.to.entity(Entity)}.
         where{lower(deal.rules.to.entity.tag).like(lower("%#{al1.foreman.tag[0, 4]}%"))}.
-        select("DISTINCT ON (allocations.id) allocations.*")
+        uniq
     Allocation.search({"foreman" => create(:entity).tag}).should be_empty
 
     Allocation.search({"storekeeper_place" => al1.storekeeper_place.tag}).should =~ [al1]
@@ -574,7 +574,7 @@ describe Allocation do
         where do
           lower(deal.rules.from.give.resource.tag).
               like(lower("%#{al1.items[0].resource.tag}%"))
-        end.select("DISTINCT ON (allocations.id) allocations.*")
+        end.uniq
     Allocation.search({"resource_tag" => create(:asset).tag}).should be_empty
 
     Allocation.search({"resource_tag" => al1.items[0].resource.tag,

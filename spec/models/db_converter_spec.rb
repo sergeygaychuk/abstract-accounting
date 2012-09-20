@@ -73,10 +73,10 @@ describe "converter for old db" do
       old_d = Convert::DbGetter.instance.legal_entity(old_w[:distributor_id])
       w.distributor.should be_instance_of(LegalEntity)
       w.distributor.name.should eq(old_d[:name])
-      w.distributor.country.tag.should eq("Russian Federation")
+      w.distributor.country.tag.should eq(I18n.t("activerecord.attributes.country.default.tag"))
       w.distributor.identifier_name.should eq("VATIN")
       w.distributor.identifier_value.should eq(old_w1[:vatin])
-      w.distributor_place.tag.should eq("Moscow")
+      w.distributor_place.tag.should eq(I18n.t("views.waybills.defaults.distributor.place"))
       w.items.count.should eq(1)
       w.items[0].resource.tag.should eq(params[:resource_tag])
       w.items[0].resource.mu.should eq(params[:resource_mu])
@@ -152,11 +152,11 @@ describe "converter for old db" do
 
     Waybill.all.each do |w|
       if w.storekeeper.id == waybill.storekeeper.id
-        w.state.should eq(Statable::INWORK)
+        w.state.should eq(Helpers::Statable::INWORK)
       elsif w.storekeeper.id == waybill1.storekeeper.id
-        w.state.should eq(Statable::INWORK)
+        w.state.should eq(Helpers::Statable::INWORK)
       else
-        w.state.should eq(Statable::APPLIED)
+        w.state.should eq(Helpers::Statable::APPLIED)
       end
     end
   end

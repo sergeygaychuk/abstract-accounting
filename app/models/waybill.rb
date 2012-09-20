@@ -132,8 +132,6 @@ class Waybill < ActiveRecord::Base
             when REVERSED
               mem.where{(deal.deal_state.closed != nil) & (deal.to_facts.amount == -1.0)}
           end
-        when 'created'
-          mem.where{to_char(created, "YYYY-MM-DD").like(lower("%#{value}%"))}
         else
           mem.where{lower(__send__(key)).like(lower("%#{value}%"))}
       end
