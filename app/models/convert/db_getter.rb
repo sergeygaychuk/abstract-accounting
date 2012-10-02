@@ -63,7 +63,8 @@ module Convert
       db.execute("SELECT waybills.id, rules.rate FROM rules
                     INNER JOIN deals ON deals.id = rules.to_id
                     INNER JOIN waybills ON waybills.deal_id = rules.deal_id
-                  WHERE deals.give_id = #{resource_id} AND deals.give_type = 'Asset' AND waybills.place_id = #{place_id}
+                  WHERE deals.give_id = #{resource_id} AND deals.give_type = 'Asset' AND
+                        waybills.place_id = #{place_id} AND waybills.from_id IS NOT NULL
                   ORDER BY waybills.created DESC, waybills.id DESC").
           collect { |info| {id: info[0], amount: info[1]} }.each do |info|
         count -= info[:amount].to_f
@@ -120,7 +121,7 @@ module Convert
           User.find(user_id).credentials.where{document_type == Waybill.name}.first.place
         ).each do |w|
           unless DbGetter.instance.get_old_id(w.id).nil?
-            res = false
+            res = true
             res = w.apply if w.state == Helpers::Statable::INWORK
             throw "Error" unless res
           end
