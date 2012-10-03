@@ -1,3 +1,7 @@
+<%= link_to("Переход на #{I18n.t("views.warehouses.place")}", "/") %>
+<br>
+<%= link_to "ОКОНЧИЛ ИНВЕНТАРИЗАЦИЮ", apply_db_converters_path(place_id: params[:place_id]) %>
+<br>
 <script type="text/javascript">
   function create(resource_id) {
     var value = $("#value_" + resource_id).val();
@@ -10,27 +14,7 @@
       alert("Введите количество большее 0");
     }
   }
-
-  function apply() {
-    var value = $("#user_id").val();
-    if(parseInt(value) > 0) {
-      var url = "<%= apply_db_converters_path({place_id: params[:place_id]}) %>";
-      url += "&user_id=" + value;
-      window.location = url;
-    } else {
-      alert("Выберите склад");
-    }
-  }
 </script>
-<label for="user_id">Склад: </label>
-<select name="user_id" id="user_id">
-  <option value="">Выберите склад</option>
-  <% Convert::DbGetter.current_users.each do |u| %>
-    <option value="<%= u.id %>"><%= u.credentials.where{document_type==Waybill.name}.
-                                        first.place.tag %>(<%= u.entity.tag %>)</option>
-  <% end %>
-</select>
-<%= link_to "Применить", "#", { onclick: "apply(); return false;" } %>
 <br>
 <table>
   <thead>
@@ -39,6 +23,7 @@
       <th>Ед. изм.</th>
       <th>Кол-во на складе</th>
       <th>Реальное кол-во</th>
+      <th>Действие</th>
       <th>Действие</th>
     </tr>
   </thead>
@@ -50,6 +35,7 @@
         <td><%= resource[:amount] %></td>
         <td><%= text_field_tag "value_#{resource[:id]}", resource[:amount] %></td>
         <td><%= link_to "Добавить", "#", { onclick: "create(#{resource[:id]}); return false;" } %></td>
+        <td><%= link_to "Удалить", remove_db_converters_path({place_id: params[:place_id], resource_id: resource[:id]}) %></td>
       </tr>
     <% end %>
   </tbody>

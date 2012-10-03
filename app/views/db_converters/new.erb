@@ -1,36 +1,37 @@
+<%= link_to(I18n.t("views.warehouses.place"), "/") %>
+<br>
+
+<script type="text/javascript">
+  $(document).ready(function(){
+    $("form").validate();
+  })
+</script>
 <%= form_tag :controller => "db_converters", :action => "create", method: "post" do %>
   <%= hidden_field_tag "adder[place_id]", @adder.place_id %>
   <%= hidden_field_tag "adder[resource_id]", @adder.resource_id %>
   <%= hidden_field_tag "adder[count]", @adder.count %>
-  <label for="adder[user_id]">Пользователь: </label>
-  <select name="adder[user_id]">
-    <option value="">Выберите склад</option>
-    <% Convert::DbGetter.current_users.each do |u| %>
-      <option value="<%= u.id %>"><%= u.credentials.where{document_type==Waybill.name}.
-                                          first.place.tag %>(<%= u.entity.tag %>)</option>
-    <% end %>
-  </select><br>
+  <%= hidden_field_tag "adder[user_id]", current_user.id %>
   <label>Место: <%= @adder.place[:tag] %></label><br>
-  <label>Ресурс: </label><%= text_field_tag "adder[resource_tag]", raw(@adder.resource[:tag]) %><br>
-  <label>Ед. изм: </label><%= text_field_tag "adder[resource_mu]", raw(@adder.resource[:mu]) %><br>
+  <label>Ресурс: </label><%= text_field_tag "adder[resource_tag]", raw(@adder.resource[:tag]), class: "required" %><br>
+  <label>Ед. изм: </label><%= text_field_tag "adder[resource_mu]", raw(@adder.resource[:mu]), class: "required" %><br>
   <% @adder.waybills.each do |w| %>
     <fieldset style="max-width: 500px;">
       <label>Создан: <%= raw(w[:created]) %></label><br>
       <% if Convert::DbGetter.instance.get_new_id(w[:id]).nil? %>
         <label>Поставщик: <%= raw(Convert::DbGetter.instance.legal_entity(Convert::DbGetter.instance.waybill(w[:id])[:distributor_id])[:name]) %></label><br>
-        <label>ИНН: </label><%= text_field_tag "adder[waybills][][vatin]", raw(Convert::DbGetter.instance.waybill(w[:id])[:vatin]) %><br>
-        <label>Номер накладной: </label><%= text_field_tag "adder[waybills][][document_id]", raw(w[:document_id]) %><br>
+        <label>ИНН: </label><%= text_field_tag "adder[waybills][][vatin]", raw(Convert::DbGetter.instance.waybill(w[:id])[:vatin]), class: "required" %><br>
+        <label>Номер накладной: </label><%= text_field_tag "adder[waybills][][document_id]", raw(w[:document_id]), class: "required" %><br>
       <% else %>
         <% new_w = Waybill.find(Convert::DbGetter.instance.get_new_id(w[:id])) %>
         <label>Поставщик: <%= new_w.distributor.name %></label><br>
         <label>ИНН: <%= new_w.distributor.identifier_value %></label><br>
         <label>Номер накладной:  <%= new_w.document_id %></label><br>
       <% end %>
-      <label>Количество: <%= w[:count] %></label><br>
+      <label>Количество:</label>
+      <%= text_field_tag "adder[waybills][][count]", w[:count], class: "required number", min: "0.01" %><br>
       <label>Цена: </label>
-      <%= text_field_tag "adder[waybills][][price]", w[:price] %>
-      <%= hidden_field_tag "adder[waybills][][id]", w[:id] %>
-      <%= hidden_field_tag "adder[waybills][][count]", w[:count] %>
+      <%= text_field_tag "adder[waybills][][price]", w[:price], class: "required number", min: "0.01" %>
+      <%= hidden_field_tag "adder[waybills][][id]", w[:id], class: "required" %>
     </fieldset>
   <% end %>
   <%= submit_tag "Добавить ресурс" %>

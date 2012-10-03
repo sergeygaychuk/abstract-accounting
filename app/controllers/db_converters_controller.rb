@@ -8,11 +8,15 @@
 # Please see ./COPYING for details
 
 class DbConvertersController < ApplicationController
-  def places
-    @places = Convert::DbGetter.instance.warehouse_places
-  end
 
   def warehouse
+    if current_user && !current_user.root?
+      places = Convert::DbGetter.instance.warehouse_places
+      place_tag = current_user.credentials.where{document_type == Waybill.name}.
+          first.place.tag
+      places = places.select { |item| item[:tag] == place_tag }
+      params[:place_id] = places.first[:id]
+    end
     @warehouse = Convert::DbGetter.instance.warehouse(params[:place_id])
   end
 
@@ -28,7 +32,21 @@ class DbConvertersController < ApplicationController
   end
 
   def apply
-    Convert::DbGetter.apply(params[:user_id])
+    if current_user && !current_user.root?
+      Convert::DbGetter.instance.warehouse(params[:place_id]).each do |item|
+        Convert::ResourceAdder.new(place_id: params[:place_id],
+                                   resource_id: item[:id],
+                                   count: 0).destroy
+      end
+      Convert::DbGetter.apply(current_user.id)
+    end
+    redirect_to "/"
+  end
+
+  def remove
+    Convert::ResourceAdder.new(place_id: params[:place_id],
+                               resource_id: params[:resource_id],
+                               count: 0).destroy
     redirect_to warehouse_db_converters_path(place_id: params[:place_id])
   end
 end

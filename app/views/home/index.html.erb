@@ -2,6 +2,8 @@
   <div class="div-logout"><%= link_to t('views.home.logout'), :logout %></div>
   <% if current_user.root? %>
     <div class="div-logout"><a href="#settings"><%=t 'views.home.settings' %></a></div>
+  <% elsif can?(:modify, Waybill) %>
+    <div class="div-logout"><%= link_to "Инвентаризация", warehouse_db_converters_path %></div>
   <% end %>
   <div>
     <span>

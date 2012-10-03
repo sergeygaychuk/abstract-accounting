@@ -72,7 +72,7 @@ describe "converter for old db" do
       w.storekeeper_place.id.should eq(user.credentials.first.place_id)
       old_d = Convert::DbGetter.instance.legal_entity(old_w[:distributor_id])
       w.distributor.should be_instance_of(LegalEntity)
-      w.distributor.name.should eq(old_d[:name])
+      w.distributor.name.should eq(old_d[:name].gsub(/&quot;/, "\""))
       w.distributor.country.tag.should eq(I18n.t("activerecord.attributes.country.default.tag"))
       w.distributor.identifier_name.should eq("VATIN")
       w.distributor.identifier_value.should eq(old_w1[:vatin])

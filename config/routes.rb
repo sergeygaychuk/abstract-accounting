@@ -158,9 +158,9 @@ Abstract::Application.routes.draw do
 
   resources :db_converters do
     collection do
-      get 'places'
       get 'warehouse'
       get 'apply'
+      get 'remove'
     end
   end
 

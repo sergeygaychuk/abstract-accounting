@@ -18,13 +18,17 @@ module Convert
       if attrs[:waybills]
         @user_id = attrs[:user_id].to_i
         @document_id = attrs[:document_id]
-        @resource_tag = attrs[:resource_tag]
-        @resource_mu = attrs[:resource_mu]
+        @resource_tag = unescape(attrs[:resource_tag])
+        @resource_mu = unescape(attrs[:resource_mu])
         @waybills = []
         attrs[:waybills].each do |w|
           @waybills << w
         end
       end
+    end
+
+    def unescape(str)
+      str.to_s.gsub(/&amp;/, "&").gsub(/&quot;/, "\"").gsub(/&gt;/, ">").gsub(/&lt;/, "<")
     end
 
     def resource
@@ -57,9 +61,9 @@ module Convert
             unless new_w.distributor
               country = Country.find_or_create_by_tag(I18n.t("activerecord.attributes.country.default.tag"))
               distributor = LegalEntity.find_all_by_name_and_country_id(
-                  old_d[:name], country).first
+                  unescape(old_d[:name]), country).first
               if distributor.nil?
-                distributor = LegalEntity.new(name: old_d[:name],
+                distributor = LegalEntity.new(name: unescape(old_d[:name]),
                                               identifier_name: "VATIN",
                                               identifier_value: w[:vatin])
                 distributor.country = country
@@ -95,6 +99,10 @@ module Convert
         end
         DbGetter.instance.add_to_shower(@resource_id, @place_id)
       end
+    end
+
+    def destroy
+      DbGetter.instance.add_to_shower(@resource_id, @place_id)
     end
   end
 end
