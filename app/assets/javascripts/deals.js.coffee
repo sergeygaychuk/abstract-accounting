@@ -6,9 +6,26 @@ $ ->
 
       super(data)
 
+      @toReport = ko.observableArray()
       @params =
         page: @page
         per_page: @per_page
+
+    toGeneralLedger: =>
+      if @toReport().length > 1
+        date = $.datepicker.formatDate('yy-mm-dd', new Date())
+        filter =
+          deal_ids: ko.mapping.toJS(@toReport())
+          date: date
+        location.hash = "general_ledger?#{$.param(filter)}"
+      else
+        $.each(@documents(), (idx,item) =>
+          if item.id == @toReport()[0]
+            @toConditions(item)
+        )
+
+    show: (deal) =>
+      location.hash = "documents/deals/#{deal.id}"
 
     select: (object) =>
       ko.dataFor($('#main').get(0)).deal_id(object.id)
