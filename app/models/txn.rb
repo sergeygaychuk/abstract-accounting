@@ -33,6 +33,8 @@ class Txn < ActiveRecord::Base
         order("#{query} #{dir}")
   end
 
+  scope :without_nulable, -> { where{value != 0} }
+
   class << self
     def on_date(date)
       joins{fact}.where{fact.day < (date + 1)}
