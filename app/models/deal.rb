@@ -103,10 +103,12 @@ class Deal < ActiveRecord::Base
 
     if self.states(:force_update).empty?
       if self.limit.side == Limit::PASSIVE && self.id == fact.from_deal_id
-        #raise "not ok! need TO first"
+        ActiveSupport::Notifications.instrument("warning.notification",
+                                                Warnings::DealPriority.new(self, fact.to, fact.from))
       end
       if self.limit.side == Limit::ACTIVE && self.id == fact.to_deal_id
-        #raise "not ok! need FROM first"
+        ActiveSupport::Notifications.instrument("warning.notification",
+                                                Warnings::DealPriority.new(self, fact.from, fact.to))
       end
     end
 
@@ -117,7 +119,8 @@ class Deal < ActiveRecord::Base
     end
 
     if self.limit.amount > 0 && amount > self.limit.amount
-      #raise "Ohoho amount > limit! it's not goood"
+      ActiveSupport::Notifications.instrument("warning.notification",
+                                              Warnings::LimitAmount.new(self, fact))
     end
 
     if !state.zero? && !self.execution_date.nil? && (self.execution_date + self.compensation_period.days) < fact.day
