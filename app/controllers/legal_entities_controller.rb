@@ -28,7 +28,10 @@ class LegalEntitiesController < ApplicationController
     legal_entity = nil
     begin
       LegalEntity.transaction do
-        legal_entity = LegalEntity.create(params[:legal_entity])
+        country = Country.find_or_create_by_tag(params[:country][:tag])
+        params[:legal_entity][:country_id] = country.id
+        legal_entity = LegalEntity.new(params[:legal_entity])
+        legal_entity.save!
         render json: { result: 'success', id: legal_entity.id }
       end
     rescue
@@ -40,6 +43,11 @@ class LegalEntitiesController < ApplicationController
     legal_entity = LegalEntity.find(params[:id])
     begin
       LegalEntity.transaction do
+        unless legal_entity.country.tag == params[:country][:tag]
+          country = Country.find_or_create_by_tag(params[:country][:tag])
+          legal_entity.country = country
+          params[:legal_entity][:country_id] = country.id
+        end
         legal_entity.update_attributes(params[:legal_entity])
         render json: { result: 'success', id: legal_entity.id }
       end
