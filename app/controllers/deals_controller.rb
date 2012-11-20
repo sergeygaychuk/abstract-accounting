@@ -88,6 +88,7 @@ class DealsController < ApplicationController
     else
       params[:deal][:execution_date] = DateTime.parse(params[:deal][:execution_date]).change(hour: 12, offset: 0)
     end
+    return false if deal.has_states?
     begin
       Deal.transaction do
         deal.update_attributes(params[:deal])
@@ -97,6 +98,7 @@ class DealsController < ApplicationController
         deal.take.update_attributes(resource_id: params[:take][:resource_id],
                                     resource_type: params[:take][:resource_type],
                                     place_id: params[:take][:place_id])
+
         deal.rules.delete_all
         if params[:rules]
           params[:rules].values.each { |item| deal.rules.create!(fact_side: item[:fact_side],

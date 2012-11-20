@@ -13,6 +13,7 @@ child(@deal => :deal) do
   attributes :tag, :isOffBalance, :rate, :entity_id, :entity_type, :compensation_period
   node(:execution_date) { @deal.execution_date.strftime('%Y/%m/%d') unless @deal.execution_date.nil? }
 end
+node(:has_states) { @deal.has_states? }
 child(@deal.entity => :entity) do
   node(:tag) do
     if @deal.entity_type == 'Entity'
