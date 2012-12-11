@@ -15,4 +15,14 @@ class Credential < ActiveRecord::Base
   belongs_to :user
   belongs_to :place
   has_one :entity, through: :user
+
+  class << self
+    def with_document(document)
+      where{document_type == document}
+    end
+
+    def with_presented_place
+      where{place_id != nil}
+    end
+  end
 end

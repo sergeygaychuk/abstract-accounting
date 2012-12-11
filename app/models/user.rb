@@ -23,12 +23,18 @@ class User < ActiveRecord::Base
   has_one :managed_group, class_name: Group, foreign_key: :manager_id
   has_many :notified_users
 
-  def self.authenticate(email, password, *credentials)
-    if "root@localhost" == email &&
-       Settings.root.password.to_s == password.to_s
-      RootUser.new
-    else
-      super(email, password, *credentials)
+  class << self
+    def authenticate(email, password, *credentials)
+      if "root@localhost" == email &&
+          Settings.root.password.to_s == password.to_s
+        RootUser.new
+      else
+        super(email, password, *credentials)
+      end
+    end
+
+    def by_credentials(credentials)
+      where{id.in(credentials.select(:user_id))}
     end
   end
 

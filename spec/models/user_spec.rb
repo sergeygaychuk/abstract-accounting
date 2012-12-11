@@ -87,4 +87,14 @@ describe User do
     managers.include?(user).should_not be_true
     managers.include?(user2).should_not be_true
   end
+
+  it "should return users by credentials" do
+    10.times do
+      user = create(:user)
+      3.times { create(:credential, user: user) }
+    end
+
+    credentials = Credential.order(:id).limit(10)
+    User.by_credentials(credentials).should =~ User.where{id.in(credentials.select(:user_id))}
+  end
 end

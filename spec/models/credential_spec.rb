@@ -19,4 +19,18 @@ describe Credential do
     should have_many Credential.versions_association_name
     should have_one(:entity).through(:user)
   end
+
+  it "should return data filtered by document_type" do
+    document = "SomeDocument"
+    3.times { create(:credential, document_type: document) }
+    3.times { create(:credential) }
+    Credential.with_document(document).all.should =~ Credential.
+        where{document_type == document}.all
+  end
+
+  it "should return data filtered by presented place" do
+    3.times { create(:credential, place_id: nil) }
+    3.times { create(:credential) }
+    Credential.with_presented_place.all.should =~ Credential.where{place_id != nil}.all
+  end
 end
