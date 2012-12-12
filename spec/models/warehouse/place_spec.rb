@@ -15,8 +15,9 @@ describe Warehouse::Place do
         collect { |column| column.name.to_sym }.should =~ [:place_id, :user_id]
   end
 
-  it { should belong_to :place }
+  it { should belong_to(:place).class_name("::Place") }
   it { should belong_to :user }
+  it { should have_one(:storekeeper).through(:user).class_name(Entity) }
 
   it { should validate_presence_of :user_id }
 

@@ -25,4 +25,33 @@ describe Fact do
     build(:fact).should be_valid
     build(:fact, :from => create(:deal)).should_not be_valid
   end
+
+  it "should filter by resource_type" do
+    5.times { create(:fact) }
+    5.times do
+      resource = create(:money)
+      from = create(:deal, take: build(:term, resource: resource))
+      to = create(:deal, give: build(:term, resource: resource))
+      create(:fact, from: from, to: to, resource: resource)
+    end
+    Fact.with_resource_type(Asset.name).all.should =~ Fact.where{resource_type == Asset.name}.
+        all
+    Fact.with_resource_type(Money.name).all.should =~ Fact.where{resource_type == Money.name}.
+        all
+  end
+
+  it "should filter by inclusion parent to_deal_id in accepted array" do
+    6.times do
+      create(:fact, parent: create(:fact))
+    end
+    deals = 2.times.collect { create(:fact, parent: create(:fact)).parent.to_deal_id }
+    deals.each { |deal_id| create(:fact, to_deal_id: deal_id,
+                                  from: create(:deal,
+                                               take: build(:term,
+                                                           resource: Deal.find(deal_id).
+                                                               give.resource)),
+                                  resource: Deal.find(deal_id).give.resource) }
+    Fact.with_parent_to_deal_id_in(deals).all.should =~ Fact.joins{parent}.
+        where{parent.to_deal_id.in(deals)}.all
+  end
 end
