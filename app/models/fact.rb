@@ -34,7 +34,16 @@ class Fact < ActiveRecord::Base
   before_save :do_save
   before_destroy :do_before_destroy
 
-  scope :pendings, includes("txn").where("txns.id is NULL").order(:id)
+  scope :pendings, -> { includes("txn").where("txns.id is NULL").order(:id) }
+
+  class << self
+    def with_parent_to_deal_id_in(deal_ids)
+      joins{parent}.where{parent.to_deal_id.in(deal_ids)}
+    end
+    def with_resource_type(type)
+      where{resource_type == type}
+    end
+  end
 
   private
   def do_save

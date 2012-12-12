@@ -16,6 +16,7 @@ module Warehouse
 
     belongs_to :place, class_name: "::Place"
     belongs_to :user
+    has_one :storekeeper, through: :user, source: :entity, class_name: Entity
 
     validates_presence_of :user_id
 
