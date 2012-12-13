@@ -28,7 +28,7 @@ class TestWarehouseDeal < ActiveRecord::Base
       self.after_save_callbacks << callback
     end
   end
-  include Helpers::WarehouseDeal
+  include Warehouse::Deal
   act_as_warehouse_deal from: :receiver, to: :storekeeper,
                         item: :initialize
 
@@ -93,7 +93,7 @@ class TestRecord
 
 end
 
-describe Helpers::WarehouseDeal do
+describe Warehouse::Deal do
   before(:all) { create(:chart) }
 
   subject { TestWarehouseDeal }

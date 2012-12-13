@@ -8,8 +8,8 @@
 # Please see ./COPYING for details
 
 class WarehousesController < ApplicationController
-  authorize_resource class: Waybill.name
-  authorize_resource class: Allocation.name
+  authorize_resource class: Warehouse::Waybill.name
+  authorize_resource class: Warehouse::Allocation.name
 
   def index
     render 'index', layout: "data_with_filter"

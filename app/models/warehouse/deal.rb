@@ -7,8 +7,8 @@
 #
 # Please see ./COPYING for details
 
-module Helpers
-  module WarehouseDeal
+module Warehouse
+  module Deal
     extend ActiveSupport::Concern
 
     module ClassMethods
@@ -27,7 +27,7 @@ module Helpers
 
         validates_presence_of :created
 
-        belongs_to :deal
+        belongs_to :deal, class_name: "::Deal"
 
         before_save :before_warehouse_deal_save
         after_save :after_warehouse_deal_save
@@ -50,7 +50,7 @@ module Helpers
       end
 
       def warehouse_attr(name, options = {})
-        ReferenceAttrBuilder.build(self, name, options)
+        Helpers::ReferenceAttrBuilder.build(self, name, options)
       end
 
       def before_item_save(callback)
@@ -139,15 +139,15 @@ module Helpers
     end
 
     def create_deal(give_resource, take_resource, from_place, to_place, entity, rate, item_idx)
-      deal = Deal.joins(:give, :take).where do
+      deal = ::Deal.joins(:give, :take).where do
         (give.resource_id == give_resource) & (give.place_id == from_place) &
         (take.resource_id == take_resource) & (take.place_id == to_place) &
         (entity_id == entity) & (entity_type == entity.class.name) & (self.rate == rate)
       end.first
       unless deal
-        deal = Deal.new(entity: entity, rate: rate,
+        deal = ::Deal.new(entity: entity, rate: rate,
             tag: I18n.t("activerecord.attributes.#{
-                          self.class.name.downcase}.deal.resource.tag",
+                          self.class.name.demodulize.downcase}.deal.resource.tag",
                         id: self.document_id, index: item_idx + 1, deal_id: self.deal_id))
         return nil unless deal.build_give(place: from_place, resource: give_resource)
         return nil unless deal.build_take(place: to_place, resource: take_resource)
@@ -163,10 +163,11 @@ module Helpers
 
     def create_main_deal
       settings = self.class.warehouse_fields
-      deal = Deal.new(entity: self.storekeeper, rate: 1.0, isOffBalance: true,
-                tag: I18n.t("activerecord.attributes.#{self.class.name.downcase}.deal.tag",
+      deal = ::Deal.new(entity: self.storekeeper, rate: 1.0, isOffBalance: true,
+                tag: I18n.t("activerecord.attributes.#{
+                                self.class.name.demodulize.downcase}.deal.tag",
                             id: self.document_id, place: storekeeper_place.tag,
-                            deal_id: Deal.count > 0 ? Deal.last.id + 1 : 1))
+                            deal_id: ::Deal.count > 0 ? ::Deal.last.id + 1 : 1))
       shipment = Asset.find_or_create_by_tag(I18n.t('activerecord.defaults.assets.shipment'))
       return nil unless deal.build_give(place: self.send("#{settings[:from]}_place"),
                                         resource: shipment)
@@ -220,22 +221,27 @@ module Helpers
 
     def after_warehouse_deal_save
       if self.id_changed?
-        add_comment(I18n.t("activerecord.attributes.#{self.class.name.downcase}.comment.create"))
+        add_comment(I18n.t("activerecord.attributes.#{
+                              self.class.name.demodulize.downcase}.comment.create"))
       else
-        add_comment(I18n.t("activerecord.attributes.#{self.class.name.downcase}.comment.update"))
+        add_comment(I18n.t("activerecord.attributes.#{
+                              self.class.name.demodulize.downcase}.comment.update"))
       end
     end
 
     def send_comment_after_apply
-      add_comment(I18n.t("activerecord.attributes.#{self.class.name.downcase}.comment.apply"))
+      add_comment(I18n.t("activerecord.attributes.#{
+                            self.class.name.demodulize.downcase}.comment.apply"))
     end
 
     def send_comment_after_reverse
-      add_comment(I18n.t("activerecord.attributes.#{self.class.name.downcase}.comment.reverse"))
+      add_comment(I18n.t("activerecord.attributes.#{
+                            self.class.name.demodulize.downcase}.comment.reverse"))
     end
 
     def send_comment_after_cancel
-      add_comment(I18n.t("activerecord.attributes.#{self.class.name.downcase}.comment.cancel"))
+      add_comment(I18n.t("activerecord.attributes.#{
+                            self.class.name.demodulize.downcase}.comment.cancel"))
     end
 
     def do_apply

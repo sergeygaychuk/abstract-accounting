@@ -21,14 +21,16 @@ class Deal < ActiveRecord::Base
   has_one :give, :class_name => "Term", :conditions => {:side => false}
   has_one :take, :class_name => "Term", :conditions => {:side => true}
   has_one :deal_state
-  has_one :waybill
-  has_one :allocation
   has_one :limit
   before_save :before_save
 
   delegate :can_apply?, :can_cancel?, :can_reverse?, to: :deal_state
   delegate :apply, :cancel, :reverse, to: :deal_state
   delegate :in_work?, to: :deal_state
+
+  #TODO: Should extend from outside. In Warehouse gem
+  has_one :waybill, class_name: Warehouse::Waybill.name
+  has_one :allocation, class_name: Warehouse::Allocation.name
 
   accepts_nested_attributes_for :limit
 
