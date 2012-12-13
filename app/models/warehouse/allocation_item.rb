@@ -7,8 +7,10 @@
 #
 # Please see ./COPYING for details
 
-class AllocationItem < WaybillItem
-  def initialize(object, resource, amount)
-    super(object, resource, amount, 0.0)
+module Warehouse
+  class AllocationItem < WaybillItem
+    def initialize(object, resource, amount)
+      super(object, resource, amount, 0.0)
+    end
   end
 end

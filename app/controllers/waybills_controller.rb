@@ -10,11 +10,11 @@
 require "helpers/state_change"
 
 class WaybillsController < ApplicationController
-  authorize_resource class: Waybill.name
+  authorize_resource class: Warehouse::Waybill.name
   layout 'comments'
 
   include Helpers::StateChange
-  act_as_statable Waybill
+  act_as_statable Warehouse::Waybill
 
   def index
     render 'index', layout: "data_with_filter"

@@ -6,15 +6,15 @@
 # License, or (at your option) any later version.
 #
 # Please see ./COPYING for details
-require "waybill"
+require "warehouse/waybill"
 require "helpers/state_change"
 
 class AllocationsController < ApplicationController
-  authorize_resource class: Allocation.name
+  authorize_resource class: Warehouse::Allocation.name
   layout 'comments'
 
   include Helpers::StateChange
-  act_as_statable Allocation
+  act_as_statable Warehouse::Allocation
 
   def preview
     render 'preview'

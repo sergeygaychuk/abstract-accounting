@@ -150,15 +150,6 @@ FactoryGirl.define do
     tag
   end
 
-  factory :waybill do
-    sequence(:document_id) { |n| "document#{n}" }
-    distributor { |waybill| waybill.association(:legal_entity) }
-    distributor_place { |waybill| waybill.association(:place) }
-    storekeeper { |waybill| waybill.association(:entity) }
-    storekeeper_place { |waybill| waybill.association(:place) }
-    created DateTime.now
-  end
-
   factory :term do
     place
     type { |term| term.association(:classifier) }
@@ -171,14 +162,6 @@ FactoryGirl.define do
 
   factory :deal_take, :parent => :term do
     side true
-  end
-
-  factory :allocation do
-    foreman { |allocation| allocation.association(:entity) }
-    foreman_place { |allocation| allocation.association(:place) }
-    storekeeper { |allocation| allocation.association(:entity) }
-    storekeeper_place { |allocation| allocation.association(:place) }
-    created Date.today
   end
 
   factory :credential do
@@ -201,5 +184,24 @@ FactoryGirl.define do
     sequence(:message) { |n| "msg#{n}" }
     date DateTime.now
     notification_type 1
+  end
+
+
+
+  factory :allocation, class: Warehouse::Allocation do
+    foreman { |allocation| allocation.association(:entity) }
+    foreman_place { |allocation| allocation.association(:place) }
+    storekeeper { |allocation| allocation.association(:entity) }
+    storekeeper_place { |allocation| allocation.association(:place) }
+    created Date.today
+  end
+
+  factory :waybill, class: Warehouse::Waybill do
+    sequence(:document_id) { |n| "document#{n}" }
+    distributor { |waybill| waybill.association(:legal_entity) }
+    distributor_place { |waybill| waybill.association(:place) }
+    storekeeper { |waybill| waybill.association(:entity) }
+    storekeeper_place { |waybill| waybill.association(:place) }
+    created DateTime.now
   end
 end

@@ -21,10 +21,14 @@ class Deal < ActiveRecord::Base
   has_one :give, :class_name => "Term", :conditions => {:side => false}
   has_one :take, :class_name => "Term", :conditions => {:side => true}
   has_one :deal_state
-  has_one :waybill
-  has_one :allocation
   has_one :limit
   before_save :before_save
+
+
+  #TODO: Should extend from outside. In Warehouse gem
+  has_one :waybill, class_name: Warehouse::Waybill.name
+  has_one :allocation, class_name: Warehouse::Allocation.name
+
   accepts_nested_attributes_for :limit
 
   custom_sort(:name) do |dir|

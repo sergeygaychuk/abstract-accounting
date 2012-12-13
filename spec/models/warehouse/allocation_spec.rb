@@ -9,7 +9,7 @@
 
 require 'spec_helper'
 
-describe Allocation do
+describe Warehouse::Allocation do
   before(:all) do
     create(:chart)
     @wb = build(:waybill)
@@ -27,12 +27,12 @@ describe Allocation do
     should validate_presence_of :storekeeper
     should validate_presence_of :storekeeper_place
     should belong_to :deal
-    should have_many Allocation.versions_association_name
+    should have_many Warehouse::Allocation.versions_association_name
     should have_many :comments
   end
 
   it "should not create items by empty fields" do
-    db = Allocation.new(created: Date.today,
+    db = Warehouse::Allocation.new(created: Date.today,
                         foreman_type: Entity.name,
                         storekeeper_id: @wb.storekeeper.id,
                         storekeeper_type: @wb.storekeeper.class.name,
@@ -43,7 +43,7 @@ describe Allocation do
   end
 
   it 'should create items' do
-    db = Allocation.new(created: Date.today,
+    db = Warehouse::Allocation.new(created: Date.today,
                         foreman_id: create(:entity).id, foreman_type: Entity.name,
                         storekeeper_id: @wb.storekeeper.id,
                         storekeeper_type: @wb.storekeeper.class.name,
@@ -54,13 +54,13 @@ describe Allocation do
     db.add_item(tag: 'nails', mu: 'pcs', amount: 500)
     db.add_item(tag: 'nails', mu: 'kg', amount: 2)
     db.items.count.should eq(2)
-    lambda { db.save } .should change(Allocation, :count).by(1)
+    lambda { db.save } .should change(Warehouse::Allocation, :count).by(1)
     db.items[0].resource.should eq(Asset.find_all_by_tag_and_mu('nails', 'pcs').first)
     db.items[0].amount.should eq(500)
     db.items[1].resource.should eq(Asset.find_all_by_tag_and_mu('nails', 'kg').first)
     db.items[1].amount.should eq(2)
 
-    db = Allocation.find(db)
+    db = Warehouse::Allocation.find(db)
     db.items.count.should eq(2)
     db.items.each do |item|
       if item.resource == Asset.find_all_by_tag_and_mu('nails', 'pcs').first
@@ -81,7 +81,7 @@ describe Allocation do
 
     deal = Deal.find(db.deal)
     deal.tag.should eq(I18n.t('activerecord.attributes.allocation.deal.tag',
-                              id: Allocation.last.nil? ? 1 : Allocation.last.id,
+                              id: Warehouse::Allocation.last.nil? ? 1 : Warehouse::Allocation.last.id,
                        place: db.storekeeper_place.tag))
     deal.entity.should eq(db.storekeeper)
     deal.isOffBalance.should be_true
@@ -96,7 +96,7 @@ describe Allocation do
 
     deal = db.create_foreman_deal(db.items[0], 0)
     deal.tag.should eq(I18n.t('activerecord.attributes.allocation.deal.resource.tag',
-                              id: Allocation.last.nil? ? 1 : Allocation.last.id,
+                              id: Warehouse::Allocation.last.nil? ? 1 : Warehouse::Allocation.last.id,
                               index: 1))
     deal.should_not be_nil
     deal.rate.should eq(1.0)
@@ -119,7 +119,7 @@ describe Allocation do
 
     deal = Deal.find(db.deal)
     deal.tag.should eq(I18n.t('activerecord.attributes.allocation.deal.tag',
-                              id: Allocation.last.nil? ? 1 : Allocation.last.id,
+                              id: Warehouse::Allocation.last.nil? ? 1 : Warehouse::Allocation.last.id,
                               place: db.storekeeper_place.tag))
     deal.entity.should eq(db.storekeeper)
     deal.isOffBalance.should be_true
@@ -132,7 +132,7 @@ describe Allocation do
 
       deal = db.create_foreman_deal(i, idx)
       deal.tag.should eq(I18n.t('activerecord.attributes.allocation.deal.resource.tag',
-                                id: Allocation.last.nil? ? 1 : Allocation.last.id,
+                                id: Warehouse::Allocation.last.nil? ? 1 : Warehouse::Allocation.last.id,
                                 index: idx + 1))
       deal.should_not be_nil
       deal.rate.should eq(1.0)
@@ -168,18 +168,18 @@ describe Allocation do
   it 'should change state' do
     PaperTrail.enabled = true
     user = create(:user)
-    create(:credential, user: user, document_type: Allocation.name)
+    create(:credential, user: user, document_type: Warehouse::Allocation.name)
     PaperTrail.whodunnit = user
 
     db = build(:allocation, storekeeper: @wb.storekeeper,
                             storekeeper_place: @wb.storekeeper_place)
     db.add_item(tag: 'roof', mu: 'm2', amount: 5)
-    db.state.should eq(Allocation::UNKNOWN)
+    db.state.should eq(Warehouse::Allocation::UNKNOWN)
 
     db.cancel.should be_false
 
     db.save!
-    db.state.should eq(Allocation::INWORK)
+    db.state.should eq(Warehouse::Allocation::INWORK)
 
     comment = Comment.last
     comment.user_id.should eq(user.id)
@@ -199,9 +199,9 @@ describe Allocation do
     comment.item_type.should eq(db.class.name)
     comment.message.should eq(I18n.t('activerecord.attributes.allocation.comment.update'))
 
-    db = Allocation.find(db)
+    db = Warehouse::Allocation.find(db)
     db.cancel.should be_true
-    db.state.should eq(Allocation::CANCELED)
+    db.state.should eq(Warehouse::Allocation::CANCELED)
 
     comment = Comment.last
     comment.user_id.should eq(user.id)
@@ -214,7 +214,7 @@ describe Allocation do
     db.add_item(tag: 'roof', mu: 'm2', amount: 1)
     db.save!
     db.apply.should be_true
-    db.state.should eq(Allocation::APPLIED)
+    db.state.should eq(Warehouse::Allocation::APPLIED)
 
     comment = Comment.last
     comment.user_id.should eq(user.id)
@@ -222,9 +222,9 @@ describe Allocation do
     comment.item_type.should eq(db.class.name)
     comment.message.should eq(I18n.t('activerecord.attributes.allocation.comment.apply'))
 
-    db = Allocation.find(db)
+    db = Warehouse::Allocation.find(db)
     db.reverse.should be_true
-    db.state.should eq(Allocation::REVERSED)
+    db.state.should eq(Warehouse::Allocation::REVERSED)
 
     comment = Comment.last
     comment.user_id.should eq(user.id)
@@ -237,7 +237,7 @@ describe Allocation do
     db.add_item(tag: 'roof', mu: 'm2', amount: 1)
     db.save!
     db.apply.should be_true
-    db.state.should eq(Allocation::APPLIED)
+    db.state.should eq(Warehouse::Allocation::APPLIED)
 
     PaperTrail.whodunnit = nil
     PaperTrail.enabled = false
@@ -281,7 +281,7 @@ describe Allocation do
     nails_deal.state.amount.should eq(1180.0)
 
     expect { db.reverse } .to change(Fact, :count).by(3)
-    db.state.should eq(Allocation::REVERSED)
+    db.state.should eq(Warehouse::Allocation::REVERSED)
 
     roof_deal.state.amount.should eq(594.0)
     nails_deal.state.amount.should eq(1190.0)
@@ -333,7 +333,7 @@ describe Allocation do
     nails_deal.balance.value.should eq(1170.0)
 
     expect { db.reverse } .to change(Txn, :count).by(3)
-    db.state.should eq(Allocation::REVERSED)
+    db.state.should eq(Warehouse::Allocation::REVERSED)
 
     roof_deal.balance.amount.should eq(589.0)
     roof_deal.balance.value.should eq(5890.0)
@@ -387,9 +387,9 @@ describe Allocation do
     db3.add_item(tag: 'nails', mu: 'kg', amount: 10)
     db3.save!
 
-    Allocation.by_warehouse(moscow).should =~ [db1, db2]
-    Allocation.by_warehouse(minsk).should =~ [db3]
-    Allocation.by_warehouse(create(:place)).all.should be_empty
+    Warehouse::Allocation.by_warehouse(moscow).should =~ [db1, db2]
+    Warehouse::Allocation.by_warehouse(minsk).should =~ [db3]
+    Warehouse::Allocation.by_warehouse(create(:place)).all.should be_empty
   end
 
   it 'should sort allocations' do
@@ -442,34 +442,34 @@ describe Allocation do
     al3.save!
     al3.apply
 
-    als = Allocation.order_by({field: 'created', type: 'acs'}).all
-    als_test = Allocation.order('created').all
+    als = Warehouse::Allocation.order_by({field: 'created', type: 'acs'}).all
+    als_test = Warehouse::Allocation.order('created').all
     als.should eq(als_test)
-    als = Allocation.order_by({field: 'created', type: 'desc'}).all
-    als_test = Allocation.order('created DESC').all
-    als.should eq(als_test)
-
-    als = Allocation.order_by({field: 'storekeeper', type: 'acs'}).all
-    als_test = Allocation.joins{deal.entity(Entity)}.order('entities.tag').all
-    als.should eq(als_test)
-    als = Allocation.order_by({field: 'storekeeper', type: 'desc'}).all
-    als_test = Allocation.joins{deal.entity(Entity)}.order('entities.tag DESC').all
+    als = Warehouse::Allocation.order_by({field: 'created', type: 'desc'}).all
+    als_test = Warehouse::Allocation.order('created DESC').all
     als.should eq(als_test)
 
-    als = Allocation.order_by({field: 'storekeeper_place', type: 'acs'}).all
-    als_test = Allocation.joins{deal.give.place}.order('places.tag').all
+    als = Warehouse::Allocation.order_by({field: 'storekeeper', type: 'acs'}).all
+    als_test = Warehouse::Allocation.joins{deal.entity(Entity)}.order('entities.tag').all
     als.should eq(als_test)
-    als = Allocation.order_by({field: 'storekeeper_place', type: 'desc'}).all
-    als_test = Allocation.joins{deal.give.place}.order('places.tag DESC').all
+    als = Warehouse::Allocation.order_by({field: 'storekeeper', type: 'desc'}).all
+    als_test = Warehouse::Allocation.joins{deal.entity(Entity)}.order('entities.tag DESC').all
     als.should eq(als_test)
 
-    als = Allocation.order_by({field: 'foreman', type: 'acs'}).all
-    als_test = Allocation.joins{deal.rules.to.entity(Entity)}.
+    als = Warehouse::Allocation.order_by({field: 'storekeeper_place', type: 'acs'}).all
+    als_test = Warehouse::Allocation.joins{deal.give.place}.order('places.tag').all
+    als.should eq(als_test)
+    als = Warehouse::Allocation.order_by({field: 'storekeeper_place', type: 'desc'}).all
+    als_test = Warehouse::Allocation.joins{deal.give.place}.order('places.tag DESC').all
+    als.should eq(als_test)
+
+    als = Warehouse::Allocation.order_by({field: 'foreman', type: 'acs'}).all
+    als_test = Warehouse::Allocation.joins{deal.rules.to.entity(Entity)}.
         group('allocations.id, allocations.created, allocations.deal_id, entities.tag').
         order('entities.tag').all
     als.should eq(als_test)
-    als = Allocation.order_by({field: 'foreman', type: 'desc'}).all
-    als_test = Allocation.joins{deal.rules.to.entity(Entity)}.
+    als = Warehouse::Allocation.order_by({field: 'foreman', type: 'desc'}).all
+    als_test = Warehouse::Allocation.joins{deal.rules.to.entity(Entity)}.
         group('allocations.id, allocations.created, allocations.deal_id, entities.tag').
         order('entities.tag DESC').all
     als.should eq(als_test)
@@ -527,48 +527,48 @@ describe Allocation do
     al3.save!
     al3.apply
 
-    Allocation.search({"created" => al1.created.strftime('%Y-%m-%d')}).should =~ [al1]
-    Allocation.search({"created" => al1.created.strftime('%Y-%m-%d')[0, 4]}).
-        should =~ Allocation.
+    Warehouse::Allocation.search({"created" => al1.created.strftime('%Y-%m-%d')}).should =~ [al1]
+    Warehouse::Allocation.search({"created" => al1.created.strftime('%Y-%m-%d')[0, 4]}).
+        should =~ Warehouse::Allocation.
         where{to_char(created, 'YYYY-MM-DD').
           like(lower("%#{al1.created.strftime('%Y-%m-%d')[0, 4]}%"))}
-    Allocation.search({"created" => DateTime.now.strftime('%Y-%m-%d')}).should be_empty
+    Warehouse::Allocation.search({"created" => DateTime.now.strftime('%Y-%m-%d')}).should be_empty
 
-    Allocation.search({"state" => Allocation::INWORK}).should =~ Allocation.
+    Warehouse::Allocation.search({"state" => Warehouse::Allocation::INWORK}).should =~ Warehouse::Allocation.
         joins{deal.deal_state}.where{deal.deal_state.closed == nil}
 
-    Allocation.search({"storekeeper" => al1.storekeeper.tag}).should =~ [al1]
-    Allocation.search({"storekeeper" => al1.storekeeper.tag[0, 4]}).
-        should =~ Allocation.joins{deal.entity(Entity)}.
+    Warehouse::Allocation.search({"storekeeper" => al1.storekeeper.tag}).should =~ [al1]
+    Warehouse::Allocation.search({"storekeeper" => al1.storekeeper.tag[0, 4]}).
+        should =~ Warehouse::Allocation.joins{deal.entity(Entity)}.
         where{lower(deal.entity.tag).like(lower("%#{al1.storekeeper.tag[0, 4]}%"))}
-    Allocation.search({"storekeeper" => create(:entity).tag}).should be_empty
+    Warehouse::Allocation.search({"storekeeper" => create(:entity).tag}).should be_empty
 
-    Allocation.search({"foreman" => al1.foreman.tag}).all.should =~ [al1]
-    Allocation.search({"foreman" => al1.foreman.tag[0, 4]}).
-        should =~ Allocation.joins{deal.rules.to.entity(Entity)}.
+    Warehouse::Allocation.search({"foreman" => al1.foreman.tag}).all.should =~ [al1]
+    Warehouse::Allocation.search({"foreman" => al1.foreman.tag[0, 4]}).
+        should =~ Warehouse::Allocation.joins{deal.rules.to.entity(Entity)}.
         where{lower(deal.rules.to.entity.tag).like(lower("%#{al1.foreman.tag[0, 4]}%"))}.
         select("DISTINCT ON (allocations.id) allocations.*")
-    Allocation.search({"foreman" => create(:entity).tag}).should be_empty
+    Warehouse::Allocation.search({"foreman" => create(:entity).tag}).should be_empty
 
-    Allocation.search({"storekeeper_place" => al1.storekeeper_place.tag}).should =~ [al1]
-    Allocation.search({"storekeeper_place" => al1.storekeeper_place.tag[0, 4]}).
-        should =~ Allocation.joins{deal.give.place}.
+    Warehouse::Allocation.search({"storekeeper_place" => al1.storekeeper_place.tag}).should =~ [al1]
+    Warehouse::Allocation.search({"storekeeper_place" => al1.storekeeper_place.tag[0, 4]}).
+        should =~ Warehouse::Allocation.joins{deal.give.place}.
         where{lower(deal.give.place.tag).like(lower("%#{al1.storekeeper_place.tag[0, 4]}%"))}
-    Allocation.search({"storekeeper_place" => create(:place).tag}).should be_empty
+    Warehouse::Allocation.search({"storekeeper_place" => create(:place).tag}).should be_empty
 
-    Allocation.search({"resource_tag" => al1.items[1].resource.tag}).should =~ [al1]
-    Allocation.search({"resource_tag" => al1.items[0].resource.tag}).
-        should =~ Allocation.joins{deal.rules.from.give.resource(Asset)}.
+    Warehouse::Allocation.search({"resource_tag" => al1.items[1].resource.tag}).should =~ [al1]
+    Warehouse::Allocation.search({"resource_tag" => al1.items[0].resource.tag}).
+        should =~ Warehouse::Allocation.joins{deal.rules.from.give.resource(Asset)}.
         where do
           lower(deal.rules.from.give.resource.tag).
               like(lower("%#{al1.items[0].resource.tag}%"))
         end.select("DISTINCT ON (allocations.id) allocations.*")
-    Allocation.search({"resource_tag" => create(:asset).tag}).should be_empty
+    Warehouse::Allocation.search({"resource_tag" => create(:asset).tag}).should be_empty
 
-    Allocation.search({"resource_tag" => al1.items[0].resource.tag,
+    Warehouse::Allocation.search({"resource_tag" => al1.items[0].resource.tag,
                        "created" => al2.created.strftime('%Y-%m-%d')}).should =~ [al2]
 
-    Allocation.search({"foreman" => al2.foreman.tag,
+    Warehouse::Allocation.search({"foreman" => al2.foreman.tag,
                        "storekeeper" => al2.storekeeper.tag}).should =~ [al2]
   end
 
@@ -599,12 +599,12 @@ describe Allocation do
   describe "#document_id" do
     context "new record" do
       it "should return last id + 1" do
-        Allocation.new.document_id.should eq(Allocation.last.id + 1)
+        Warehouse::Allocation.new.document_id.should eq(Warehouse::Allocation.last.id + 1)
       end
 
       it "should return 1 if records is not exists" do
-        Allocation.delete_all
-        Allocation.new.document_id.should eq(1)
+        Warehouse::Allocation.delete_all
+        Warehouse::Allocation.new.document_id.should eq(1)
       end
     end
 
@@ -628,20 +628,20 @@ describe Allocation do
   describe "#foreman_place_or_new" do
     it "should return foreman_place if exists" do
       place = create(:place)
-      al = Allocation.new(foreman_place_id: place.id)
+      al = Warehouse::Allocation.new(foreman_place_id: place.id)
       al.foreman_place_or_new.should eq(place)
     end
 
     it "should return new record if warehouse_id is not exists" do
-      Allocation.new.foreman_place_or_new.should be_new_record
+      Warehouse::Allocation.new.foreman_place_or_new.should be_new_record
     end
 
     it "should return place by warehouse" do
       storekeeper = create(:entity)
       storekeeper_place = create(:place)
       create(:credential, user: create(:user, entity: storekeeper),
-             document_type: Allocation.name, place: storekeeper_place)
-      al = Allocation.new
+             document_type: Warehouse::Allocation.name, place: storekeeper_place)
+      al = Warehouse::Allocation.new
       al.storekeeper = storekeeper
       al.storekeeper_place = storekeeper_place
       al.foreman_place_or_new.should eq(storekeeper_place)
@@ -649,7 +649,7 @@ describe Allocation do
   end
 end
 
-describe AllocationItemsValidator do
+describe Warehouse::AllocationItemsValidator do
   it 'should not validate' do
     create(:chart)
     wb = build(:waybill)
