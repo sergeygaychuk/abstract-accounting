@@ -736,40 +736,35 @@ describe Warehouse::Waybill do
   end
 
   it "should filter by warehouse" do
-    moscow = create(:place)
-    minsk = create(:place)
-    ivanov = create(:entity)
-    petrov = create(:entity)
-    sidorov = create(:entity)
+    moscow = build(:warehouse)
+    moscow.save
+    moscow_waybills = 3.times.collect do
+      waybill = build(:waybill, storekeeper: moscow.storekeeper,
+                      storekeeper_place: moscow.place)
+      asset = create(:asset)
+      waybill.add_item(tag: asset.tag, mu: asset.mu, amount: 100.12, price: 23.22)
+      asset = create(:asset)
+      waybill.add_item(tag: asset.tag, mu: asset.mu, amount: 100.12, price: 23.22)
+      waybill.save.should be_true
+      waybill
+    end
 
-    wb1 = build(:waybill, storekeeper: ivanov,
-                                  storekeeper_place: moscow)
-    wb1.add_item(tag: 'roof', mu: 'rm', amount: 100, price: 120.0)
-    wb1.add_item(tag: 'nails', mu: 'pcs', amount: 700, price: 1.0)
-    wb1.save!
+    minsk = build(:warehouse)
+    minsk.save
+    minsk_waybills = 3.times.collect do
+      waybill = build(:waybill, storekeeper: minsk.storekeeper,
+                      storekeeper_place: minsk.place)
+      asset = create(:asset)
+      waybill.add_item(tag: asset.tag, mu: asset.mu, amount: 100.12, price: 23.22)
+      asset = create(:asset)
+      waybill.add_item(tag: asset.tag, mu: asset.mu, amount: 100.12, price: 23.22)
+      waybill.save.should be_true
+      waybill
+    end
 
-    wb2 = build(:waybill, storekeeper: ivanov,
-                                  storekeeper_place: moscow)
-    wb2.add_item(tag: 'nails', mu: 'pcs', amount: 1200, price: 1.0)
-    wb2.add_item(tag: 'nails', mu: 'kg', amount: 10, price: 150.0)
-    wb2.add_item(tag: 'roof', mu: 'rm', amount: 50, price: 100.0)
-    wb2.save!
-
-    wb4 = build(:waybill, storekeeper: sidorov,
-                                  storekeeper_place: moscow)
-    wb4.add_item(tag: 'roof', mu: 'rm', amount: 500, price: 120.0)
-    wb4.add_item(tag: 'nails', mu: 'kg', amount: 300, price: 150.0)
-    wb4.save!
-
-    wb3 = build(:waybill, storekeeper: petrov,
-                                  storekeeper_place: minsk)
-    wb3.add_item(tag: 'roof', mu: 'rm', amount: 500, price: 120.0)
-    wb3.add_item(tag: 'nails', mu: 'kg', amount: 300, price: 150.0)
-    wb3.save!
-
-    Warehouse::Waybill.by_warehouse(moscow).should =~ [wb1, wb2, wb4]
-    Warehouse::Waybill.by_warehouse(minsk).should =~ [wb3]
-    Warehouse::Waybill.by_warehouse(create(:place)).all.should be_empty
+    Warehouse::Waybill.by_warehouse(moscow).should =~ moscow_waybills
+    Warehouse::Waybill.by_warehouse(minsk).should =~ minsk_waybills
+    Warehouse::Waybill.by_warehouse(build(:warehouse)).all.should be_empty
   end
 
   it 'should sort waybills' do

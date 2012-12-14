@@ -25,7 +25,7 @@ describe Warehouse::Place do
     it "should create new warehouse through save" do
       place = create(:place)
       user = create(:user)
-      w_place = Warehouse::Place.new(place_id: place.id, user_id: user.id)
+      w_place = build(:warehouse, user: user, place: place)
       expect do
         w_place.save.should be_true
       end.to change(Credential, :count).by(1)
@@ -84,6 +84,32 @@ describe Warehouse::Place do
       Warehouse::Place.all.count.should eq(5)
       warehouses = users.collect { |user| Warehouse::Place.new(user_id: user.id, place_id: user.credentials.first.place_id) }
       Warehouse::Place.all.should =~ warehouses
+    end
+  end
+
+  describe "#resources" do
+    it "should have resources only for current place" do
+      create(:chart)
+      5.times do
+        warehouse = build(:warehouse)
+        warehouse.save.should be_true
+        3.times do
+          waybill = build(:waybill, storekeeper: warehouse.storekeeper,
+                          storekeeper_place: warehouse.place)
+          asset = create(:asset)
+          waybill.add_item(tag: asset.tag, mu: asset.mu, amount: 100.12, price: 23.22)
+          asset = create(:asset)
+          waybill.add_item(tag: asset.tag, mu: asset.mu, amount: 100.12, price: 23.22)
+          waybill.save.should be_true
+          waybill.apply.should be_true
+        end
+      end
+      10.times { create(:asset) }
+      warehouse = Warehouse::Place.last
+      assets = Warehouse::Waybill.by_warehouse(warehouse).inject([]) do |memo, waybill|
+        memo + waybill.items.collect { |item| item.resource }
+      end
+      warehouse.resources.all.collect { |r| r.resource }.should =~ assets
     end
   end
 end

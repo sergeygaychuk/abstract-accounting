@@ -41,7 +41,8 @@ module Warehouse
     class << self
       def by_warehouse(warehouse)
         joins{deal.take}.
-            where{deal.take.place_id == warehouse.id}
+            where{deal.take.place_id == warehouse.place_id}.
+            where{deal.entity_id == warehouse.storekeeper.id}
       end
 
       def total

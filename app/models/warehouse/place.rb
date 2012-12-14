@@ -20,6 +20,10 @@ module Warehouse
 
     validates_presence_of :user_id
 
+    def resources
+      Resource.by_warehouse(self)
+    end
+
     def save
       valid? and !!user.credentials.create(place_id: place_id, document_type: Warehouse.name)
     end
