@@ -204,4 +204,9 @@ FactoryGirl.define do
     storekeeper_place { |waybill| waybill.association(:place) }
     created DateTime.now
   end
+
+  factory :warehouse, class: Warehouse::Place do
+    user
+    place
+  end
 end

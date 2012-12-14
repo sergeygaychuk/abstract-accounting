@@ -25,9 +25,8 @@ describe Warehouse::Resource do
       create(:chart)
       @assets = []
       5.times do
-        warehouse = Warehouse::Place.new(user_id: create(:user).id,
-                                         place_id: create(:place).id)
-        warehouse.save
+        warehouse = build(:warehouse)
+        warehouse.save.should be_true
         3.times do
           waybill = build(:waybill, storekeeper: warehouse.storekeeper,
                           storekeeper_place: warehouse.place)
@@ -45,5 +44,15 @@ describe Warehouse::Resource do
     it { Warehouse::Resource.all.count.should eq(@assets.count) }
     it { Warehouse::Resource.all.should =~ @assets.
         collect{ |item| Warehouse::Resource.new(resource_id: item.id) } }
+
+    it "should filtrate by warehouse" do
+      warehouse = Warehouse::Place.first
+      assets = Warehouse::Waybill.by_warehouse(warehouse).inject([]) do |memo, waybill|
+        memo + waybill.items.collect do |item|
+          Warehouse::Resource.new(resource: item.resource)
+        end
+      end
+      Warehouse::Resource.by_warehouse(warehouse).all.should =~ assets
+    end
   end
 end

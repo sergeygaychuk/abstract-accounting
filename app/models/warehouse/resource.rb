@@ -25,6 +25,12 @@ module Warehouse
       def scoped
         ResourceScope.scoped
       end
+
+      def by_warehouse(warehouse)
+        joins{to.take}.
+            where{to.entity_id == warehouse.storekeeper.id}.
+            where{to.take.place_id == warehouse.place_id}
+      end
     end
 
     private
