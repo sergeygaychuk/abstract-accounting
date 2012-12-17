@@ -36,19 +36,23 @@ module Warehouse
     end
 
     private
-    class ResourceScope < ::Fact
-      default_scope do
-        with_parent_to_deal_id_in(Waybill.select(:deal_id)).
-        with_resource_type(Asset.name).
-        group{facts.to_deal_id}.group{facts.resource_id}.
-        select{facts.resource_id.as(:resource_id)}.select{facts.to_deal_id.as(:deal_id)}
-      end
+      class ResourceScope < ::Fact
+        default_scope do
+          with_parent_to_deal_id_in(Waybill.select(:deal_id)).
+          with_resource_type(Asset.name).
+          group{facts.to_deal_id}.group{facts.resource_id}.
+          select{facts.resource_id.as(:resource_id)}.select{facts.to_deal_id.as(:deal_id)}
+        end
 
-      class << self
-        def instantiate(record)
-          Resource.instantiate(record)
+        class << self
+          def instantiate(record)
+            Resource.instantiate(record)
+          end
+
+          def presented
+            joins{to.states}.where{to.states.paid == nil}
+          end
         end
       end
-    end
   end
 end
