@@ -108,16 +108,16 @@ describe Warehouse::Resource do
         waybill.save.should be_true
         waybill.apply.should be_true
       end
-      resources = Warehouse::Resource.by_warehouse(warehouse)
-      resources.presented.count.size.should eq(2)
-      resources.presented.collect { |r| r.resource }.should =~ [asset1, asset2]
+      resources = Warehouse::Resource.by_warehouse(warehouse).presented
+      resources.count.size.should eq(2)
+      resources.collect { |r| r.resource }.should =~ [asset1, asset2]
 
       Warehouse::Waybill.by_warehouse(warehouse).first.deal.rules.joins{to.give}.
           where{to.give.resource_id == asset1.id}.first.to.states.order(:id).last.
           update_attributes(paid: DateTime.now).should be_true
-      resources = Warehouse::Resource.by_warehouse(warehouse)
-      resources.presented.count.size.should eq(1)
-      resources.presented.collect { |r| r.resource }.should =~ [asset2]
+      resources = Warehouse::Resource.presented.by_warehouse(warehouse)
+      resources.count.size.should eq(1)
+      resources.collect { |r| r.resource }.should =~ [asset2]
     end
   end
 end
