@@ -24,14 +24,13 @@ module Warehouse
     end
 
     class << self
-      def scoped
-        ResourceScope.scoped
+      def remote_scope(name, filter)
+        ResourceScope.scope name, filter
+        self.define_singleton_method(name) { |*args| scoped.send(name, *args) }
       end
 
-      def by_warehouse(warehouse)
-        joins{to.take}.
-            where{to.entity_id == warehouse.storekeeper.id}.
-            where{to.take.place_id == warehouse.place_id}
+      def scoped
+        ResourceScope.scoped
       end
     end
 
@@ -48,11 +47,14 @@ module Warehouse
           def instantiate(record)
             Resource.instantiate(record)
           end
-
-          def presented
-            joins{to.states}.where{to.states.paid == nil}
-          end
         end
+      end
+    public
+      remote_scope :presented, -> { joins{to.states}.where{to.states.paid == nil} }
+      remote_scope :by_warehouse, ->(warehouse) do
+        joins{to.take}.
+            where{to.entity_id == warehouse.storekeeper.id}.
+            where{to.take.place_id == warehouse.place_id}
       end
   end
 end
