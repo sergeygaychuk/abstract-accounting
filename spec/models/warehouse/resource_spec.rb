@@ -92,4 +92,32 @@ describe Warehouse::Resource do
     resources.count.size.should eq(2)
     resources.collect { |r| r.resource }.should =~ [asset1, asset2]
   end
+
+  describe "#presented" do
+    it "should return all resources with positive amount" do
+      warehouse = build(:warehouse)
+      warehouse.save.should be_true
+
+      asset1 = create(:asset)
+      asset2 = create(:asset)
+      3.times do
+        waybill = build(:waybill, storekeeper: warehouse.storekeeper,
+                        storekeeper_place: warehouse.place)
+        waybill.add_item(tag: asset1.tag, mu: asset1.mu, amount: 100.12, price: 23.22)
+        waybill.add_item(tag: asset2.tag, mu: asset2.mu, amount: 100.12, price: 23.22)
+        waybill.save.should be_true
+        waybill.apply.should be_true
+      end
+      resources = Warehouse::Resource.by_warehouse(warehouse)
+      resources.presented.count.size.should eq(2)
+      resources.presented.collect { |r| r.resource }.should =~ [asset1, asset2]
+
+      Warehouse::Waybill.by_warehouse(warehouse).first.deal.rules.joins{to.give}.
+          where{to.give.resource_id == asset1.id}.first.to.states.order(:id).last.
+          update_attributes(paid: DateTime.now).should be_true
+      resources = Warehouse::Resource.by_warehouse(warehouse)
+      resources.presented.count.size.should eq(1)
+      resources.presented.collect { |r| r.resource }.should =~ [asset2]
+    end
+  end
 end
