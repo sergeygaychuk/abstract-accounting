@@ -12,8 +12,10 @@ module Warehouse
   class Resource < ActiveRecord::Base
     has_no_table
     column :resource_id, :integer
+    column :deal_id, :integer
 
     belongs_to :resource, class_name: "::Asset"
+    belongs_to :deal, class_name: "::Deal"
 
     delegate :tag, :mu, :to => :resource
 
@@ -37,7 +39,9 @@ module Warehouse
     class ResourceScope < ::Fact
       default_scope do
         with_parent_to_deal_id_in(Waybill.select(:deal_id)).
-        with_resource_type(Asset.name).select(:resource_id)
+        with_resource_type(Asset.name).
+        group{facts.to_deal_id}.group{facts.resource_id}.
+        select{facts.resource_id.as(:resource_id)}.select{facts.to_deal_id.as(:deal_id)}
       end
 
       class << self
