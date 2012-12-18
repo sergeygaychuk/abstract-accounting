@@ -17,7 +17,8 @@ module Warehouse
     belongs_to :resource, class_name: "::Asset"
     belongs_to :deal, class_name: "::Deal"
 
-    delegate :tag, :mu, :to => :resource
+    delegate :tag, :mu, to: :resource
+    delegate :state, to: :deal
 
     def == (other)
       other.resource_id == self.resource_id
