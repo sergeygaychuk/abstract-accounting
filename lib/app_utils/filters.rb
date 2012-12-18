@@ -40,6 +40,8 @@ module AppUtils
         args.first.each do |key, value|
           if self.attribute_names.include?(key) || self.attribute_names.include?(key.to_s)
             scope = scope.where{lower(__send__(key)).like(lower("%#{value}%"))}
+          elsif self.respond_to?(custom_search_method_name(key))
+            scope = scope.send(custom_search_method_name(key), value)
           end
         end
         scope
@@ -58,6 +60,14 @@ module AppUtils
     module ClassMethods
       def custom_sort(name, &block)
         define_singleton_method "sort_by_#{name}".to_sym, &block
+      end
+
+      def custom_search(name, &block)
+        define_singleton_method custom_search_method_name(name), &block
+      end
+
+      def custom_search_method_name(name)
+        "search_by_#{name}".to_sym
       end
 
       include FilterMethods

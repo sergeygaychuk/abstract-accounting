@@ -35,6 +35,12 @@ module Warehouse
       end
     end
 
+    [:tag, :mu, :amount].each do |name|
+      custom_search name do |value|
+        scoped.send(custom_search_method_name(name), value)
+      end
+    end
+
     private
       class ResourceScope < ::Fact
         default_scope do
@@ -48,6 +54,19 @@ module Warehouse
           def instantiate(record)
             Resource.instantiate(record)
           end
+        end
+
+        custom_search :tag do |value|
+          joins{resource(Asset)}.where{lower(resource.tag).like(lower("%#{value}%"))}
+        end
+
+        custom_search :mu do |value|
+          joins{resource(Asset)}.where{lower(resource.mu).like(lower("%#{value}%"))}
+        end
+
+        custom_search :amount do |value|
+          joins{to.states}.where{to.states.paid == nil}.
+              where{cast(to.states.amount.as("character(100)")).like("%#{value}%")}
         end
       end
     public

@@ -91,6 +91,23 @@ describe AppUtils::ARFilters do
     end
   end
 
+  describe "#custom_search" do
+    it "should create custom sort method" do
+      DammyClass.class_eval do
+        custom_search(:searched_name) { |value| "Looked for #{value}" }
+      end
+
+      DammyClass.singleton_methods.should be_include(:search_by_searched_name)
+      DammyClass.search_by_searched_name("ASC").should eq("Looked for ASC")
+    end
+  end
+
+  describe "#custom_search_method_name" do
+    it "should return name of method" do
+      DammyClass.custom_search_method_name("key").should eq(:search_by_key)
+    end
+  end
+
   describe "#sort" do
     it "should call order" do
       DammyClass.sort("id", "desc").ordered.should eq("id desc")
@@ -163,6 +180,14 @@ describe AppUtils::ARFilters do
       Entity.limit(1).search({tag: "i"}).count.should eq(1)
       Entity.limit(1).search({tag: "i"}).all.should =~ Entity.limit(1).
           where{tag.like("%i%")}.all
+    end
+
+    it "should call custom search if attr name is unknown" do
+      Entity.class_exec do
+        custom_search(:mega_tag) { |value| where{tag.like("F#{value}%")} }
+      end
+      Entity.search({mega_tag: "i"}).count.should eq(2)
+      Entity.search({mega_tag: "i"}).all.should =~ Entity.where{tag.like("Fi%")}.all
     end
   end
 
