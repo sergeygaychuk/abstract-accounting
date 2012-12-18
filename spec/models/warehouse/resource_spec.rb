@@ -184,4 +184,13 @@ describe Warehouse::Resource do
     resources.exclude_resource_ids(resources.collect { |i| i.resource_id }).count.size.
         should eq(0)
   end
+
+  it "should return resources by id" do
+    warehouse = Warehouse::Place.first
+    resource = Warehouse::Resource.by_warehouse(warehouse).first
+    Warehouse::Resource.with_resource_id(resource.resource_id).
+        by_warehouse(warehouse).count.size.should eq(1)
+    Warehouse::Resource.with_resource_id(resource.resource_id).
+        by_warehouse(warehouse).first.should eq(resource)
+  end
 end
