@@ -24,6 +24,7 @@ describe Warehouse::Resource do
 
   it { should delegate_method(:tag).to(:resource) }
   it { should delegate_method(:mu).to(:resource) }
+  it { should delegate_method(:state).to(:deal) }
 
   context "with created waybills" do
     before :all do
@@ -118,6 +119,14 @@ describe Warehouse::Resource do
       resources = Warehouse::Resource.presented.by_warehouse(warehouse)
       resources.count.size.should eq(1)
       resources.collect { |r| r.resource }.should =~ [asset2]
+    end
+  end
+
+  it "should return last state from deal" do
+    warehouse = Warehouse::Place.first
+    resources = Warehouse::Resource.presented.by_warehouse(warehouse)
+    resources.each do |resource|
+      resource.deal.state.should eq(resource.state)
     end
   end
 end
