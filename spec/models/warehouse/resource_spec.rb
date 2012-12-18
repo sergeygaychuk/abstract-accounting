@@ -129,4 +129,49 @@ describe Warehouse::Resource do
       resource.deal.state.should eq(resource.state)
     end
   end
+
+  describe "#search" do
+    let(:nails_pcs) { create(:asset, tag: "nails", mu: "pcs") }
+    let(:nails_kg) { create(:asset, tag: "nails", mu: "kg") }
+    let(:roof_rm) { create(:asset, tag: "roof", mu: "rm") }
+    let(:warehouse) do
+      warehouse = build(:warehouse)
+      warehouse.save.should be_true
+      warehouse
+    end
+
+    before :all do
+      wb = build(:waybill, storekeeper: warehouse.storekeeper,
+                 storekeeper_place: warehouse.place)
+      wb.add_item(tag: roof_rm.tag, mu: roof_rm.mu, amount: 100, price: 120.0)
+      wb.add_item(tag: nails_pcs.tag, mu: nails_pcs.mu, amount: 700, price: 1.0)
+      wb.save!
+      wb.apply
+      wb = build(:waybill, storekeeper: warehouse.storekeeper,
+                 storekeeper_place: warehouse.place)
+      wb.add_item(tag: nails_pcs.tag, mu: nails_pcs.mu, amount: 1200, price: 1.0)
+      wb.add_item(tag: nails_kg.tag, mu: nails_kg.mu, amount: 10, price: 150.0)
+      wb.add_item(tag: roof_rm.tag, mu: roof_rm.mu, amount: 50, price: 100.0)
+      wb.save!
+      wb.apply
+    end
+
+    it "should search by resource tag" do
+      scope = Warehouse::Resource.search({tag: "ai"}).by_warehouse(warehouse)
+      scope.count.size.should eq(2)
+      scope.all.collect{ |item| item.resource }.should =~ [nails_kg, nails_pcs]
+    end
+
+    it "should search by resource mu" do
+      scope = Warehouse::Resource.by_warehouse(warehouse).search({mu: "k"})
+      scope.count.size.should eq(1)
+      scope.all.collect{ |item| item.resource }.should =~ [nails_kg]
+    end
+
+    it "should search by amount" do
+      scope = Warehouse::Resource.search({amount: "50"}).by_warehouse(warehouse)
+      scope.count.size.should eq(1)
+      scope.all.collect{ |item| item.resource }.should =~ [roof_rm]
+    end
+  end
 end

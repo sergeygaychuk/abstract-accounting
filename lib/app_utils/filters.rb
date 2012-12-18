@@ -44,8 +44,8 @@ module AppUtils
             else
               scope = scope.where{cast(__send__(key).as("character(100)")).like("%#{value}%")}
             end
-          elsif self.respond_to?("search_by_#{key}".to_sym)
-            scope = scope.send("search_by_#{key}".to_sym, value)
+          elsif self.respond_to?(custom_search_method_name(key))
+            scope = scope.send(custom_search_method_name(key), value)
           end
         end
         scope
@@ -67,7 +67,11 @@ module AppUtils
       end
 
       def custom_search(name, &block)
-        define_singleton_method "search_by_#{name}".to_sym, &block
+        define_singleton_method custom_search_method_name(name), &block
+      end
+
+      def custom_search_method_name(name)
+        "search_by_#{name}".to_sym
       end
 
       include FilterMethods
