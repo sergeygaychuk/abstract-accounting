@@ -174,4 +174,14 @@ describe Warehouse::Resource do
       scope.all.collect{ |item| item.resource }.should =~ [roof_rm]
     end
   end
+
+  it "should exclude resources by ids" do
+    warehouse = Warehouse::Place.first
+    resources = Warehouse::Resource.by_warehouse(warehouse)
+    resource = resources.first
+    resources.exclude_resource_ids(resource.resource_id).all.should =~ resources.all.clone.
+        delete_if { |r| r.resource_id == resource.resource_id }
+    resources.exclude_resource_ids(resources.collect { |i| i.resource_id }).count.size.
+        should eq(0)
+  end
 end

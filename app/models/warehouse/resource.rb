@@ -76,5 +76,6 @@ module Warehouse
             where{to.entity_id == warehouse.storekeeper.id}.
             where{to.take.place_id == warehouse.place_id}
       end
+      remote_scope :exclude_resource_ids, ->(ids) { where{resource_id.not_in(ids)} }
   end
 end
