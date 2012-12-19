@@ -18,11 +18,11 @@ module Warehouse
 
     def exp_amount
       return 0.0 unless self.resource
-      resource_state = Warehouse.all(where: {
-          warehouse_id: { equal: @object.storekeeper_place.id },
-          'assets.id' => { equal_attr: self.resource.id } }).first
+      resource_state = Warehouse::Resource.
+          by_warehouse(@object.warehouse).
+          with_resource_id(self.resource.id).first
       return 0.0 unless resource_state
-      resource_state.real_amount
+      resource_state.amount
     end
 
     def initialize(attrs = {})

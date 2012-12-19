@@ -19,6 +19,7 @@ module Warehouse
 
     delegate :tag, :mu, to: :resource
     delegate :state, to: :deal
+    delegate :amount, to: :state
 
     def == (other)
       other.resource_id == self.resource_id

@@ -33,6 +33,11 @@ module Warehouse
     end
 
     class << self
+      def remote_scope(name, filter)
+        PlaceScope.scope name, filter
+        self.define_singleton_method(name) { |*args| scoped.send(name, *args) }
+      end
+
       def scoped
         PlaceScope.scoped
       end
@@ -52,5 +57,8 @@ module Warehouse
           end
         end
       end
+    public
+      remote_scope :by_place, ->(place) { where{credentials.place_id == my{place}} }
+      remote_scope :by_storekeeper, ->(storekeeper) { where{entity_id == my{storekeeper}} }
   end
 end

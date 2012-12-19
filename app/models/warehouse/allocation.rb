@@ -40,9 +40,10 @@ module Warehouse
                    reader: -> { self.deal.nil? ? nil : self.deal.take.place }
 
     class << self
-      def by_warehouse(place)
+      def by_warehouse(warehouse)
         joins{deal.give}.
-            where{deal.give.place_id == place.id}
+            where{deal.give.place_id == warehouse.place_id}.
+            where{deal.entity_id == warehouse.storekeeper.id}
       end
     end
 
@@ -104,8 +105,8 @@ module Warehouse
 
     def foreman_place_or_new
       return ::Place.find(self.foreman_place.id) if self.foreman_place
-      if self.warehouse_id
-        ::Place.find(Allocation.extract_warehouse(self.warehouse_id)[:storekeeper_place_id])
+      if self.storekeeper_place
+        self.storekeeper_place
       else
         ::Place.new
       end

@@ -28,6 +28,11 @@ describe Warehouse::AllocationReport do
     wb1.apply
     wb2.apply
 
+    build(:warehouse, place: wb1.storekeeper_place,
+          user: create(:user, entity: wb1.storekeeper)).save.should be_true
+    build(:warehouse, place: wb2.storekeeper_place,
+          user: create(:user, entity: wb2.storekeeper)).save.should be_true
+
     al1 = build(:allocation, created: Date.new(2011,11,11),
                 storekeeper: wb1.storekeeper, storekeeper_place: wb1.storekeeper_place,
                 foreman: pupkin)
@@ -80,6 +85,11 @@ describe Warehouse::AllocationReport do
     petrov = create(:entity, tag: 'Petrov1')
     antonov = create(:entity, tag: 'Antonov1')
     pupkin = create(:entity, tag: 'Pupkin1')
+
+    build(:warehouse, place: moscow, user: create(:user, entity: antonov)).save.should be_true
+    build(:warehouse, place: kiev, user: create(:user, entity: ivanov)).save.should be_true
+    build(:warehouse, place: amsterdam,
+          user: create(:user, entity: petrov)).save.should be_true
 
     wb1 = build(:waybill, created: Date.new(2011,11,11), document_id: 11,
                 distributor: petrov, storekeeper: antonov,
@@ -145,12 +155,14 @@ describe Warehouse::AllocationReport do
     als_test = Warehouse::AllocationReport.joins{deal.give.place}.order('places.tag DESC').all
     als.should eq(als_test)
 
-    als = Warehouse::AllocationReport.select_all.with_resources.sort(field: 'foreman', type: 'asc').all
-    als_test = Warehouse::AllocationReport.joins{deal.rules.to.entity(Entity)}.order('entities.tag ASC').all
+    als = Warehouse::AllocationReport.select_all.with_resources.
+        sort(field: 'foreman', type: 'asc').all
+    als_test = Warehouse::AllocationReport.joins{deal.rules.to.entity(Entity)}.
+        order('entities.tag ASC').all
     als.should eq(als_test)
     als = Warehouse::AllocationReport.sort(field: 'foreman', type: 'desc').all
     als_test = Warehouse::AllocationReport.joins{deal.rules.to.entity(Entity)}.
-        order('entities.tag DESC').all
+        order('entities.tag DESC').order("entities.id ASC").all
     als.should eq(als_test)
 
     als = Warehouse::AllocationReport.select_all.with_resources.sort(field: 'resource_tag', type: 'asc').all
@@ -183,6 +195,11 @@ describe Warehouse::AllocationReport do
     petrov = create(:entity, tag: 'Petrov2')
     antonov = create(:entity, tag: 'Antonov2')
     pupkin = create(:entity, tag: 'Pupkin2')
+
+    build(:warehouse, place: moscow, user: create(:user, entity: antonov)).save.should be_true
+    build(:warehouse, place: kiev, user: create(:user, entity: ivanov)).save.should be_true
+    build(:warehouse, place: amsterdam,
+          user: create(:user, entity: petrov)).save.should be_true
 
     wb1 = build(:waybill, created: Date.new(2011,11,11), document_id: 21,
                 distributor: petrov, storekeeper: antonov,

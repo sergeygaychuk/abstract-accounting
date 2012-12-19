@@ -9,7 +9,7 @@
 
 class Document < Version
   def self.documents
-    [Waybill.name, Allocation.name, User.name, Group.name]
+    [Warehouse::Waybill.name, Warehouse::Allocation.name, User.name, Group.name]
   end
 
   def document_id
@@ -59,13 +59,13 @@ class Document < Version
       versions_scope = versions_scope.where do
         scope = nil
         user.credentials.each do |c|
-          if c.document_type == Waybill.name
+          if c.document_type == Warehouse::Waybill.name
             tmp_scope = id.in(
                 versions_scope.joins{item(c.document_type.camelize.constantize).deal.take}.
                     where{(item.deal.entity_id == user.entity_id) &
                           (item.deal.take.place_id == c.place_id)}
             )
-          elsif c.document_type == Allocation.name
+          elsif c.document_type == Warehouse::Allocation.name
             tmp_scope = id.in(
                 versions_scope.joins{item(c.document_type.camelize.constantize).deal.give}.
                     where{(item.deal.entity_id == user.entity_id) &

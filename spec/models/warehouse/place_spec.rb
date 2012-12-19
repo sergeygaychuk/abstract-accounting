@@ -94,8 +94,7 @@ describe Warehouse::Place do
         warehouse = build(:warehouse)
         warehouse.save.should be_true
         3.times do
-          waybill = build(:waybill, storekeeper: warehouse.storekeeper,
-                          storekeeper_place: warehouse.place)
+          waybill = build(:waybill, warehouse: warehouse)
           asset = create(:asset)
           waybill.add_item(tag: asset.tag, mu: asset.mu, amount: 100.12, price: 23.22)
           asset = create(:asset)
@@ -110,6 +109,35 @@ describe Warehouse::Place do
         memo + waybill.items.collect { |item| item.resource }
       end
       warehouse.resources.all.collect { |r| r.resource }.should =~ assets
+    end
+  end
+
+  it "should return all warehouses by place" do
+    3.times { build(:warehouse).save.should be_true }
+    warehouse = Warehouse::Place.first
+    Warehouse::Place.by_place(warehouse.place).count.should eq(1)
+    Warehouse::Place.by_place(warehouse.place).first.should eq(warehouse)
+
+    3.times { build(:warehouse, place: warehouse.place).save.should be_true }
+    Warehouse::Place.by_place(warehouse.place).count.should eq(4)
+    Warehouse::Place.by_place(warehouse.place).all.each do |item|
+      item.place.should eq(warehouse.place)
+    end
+  end
+
+  it "should return all warehouses by storekeeper" do
+    3.times { build(:warehouse).save.should be_true }
+    warehouse = Warehouse::Place.first
+    Warehouse::Place.by_storekeeper(warehouse.storekeeper).count.should eq(1)
+    Warehouse::Place.by_storekeeper(warehouse.storekeeper).first.should eq(warehouse)
+
+    3.times do
+      build(:warehouse, user: create(:user, entity: warehouse.storekeeper)).
+        save.should be_true
+    end
+    Warehouse::Place.by_storekeeper(warehouse.storekeeper).count.should eq(4)
+    Warehouse::Place.by_storekeeper(warehouse.storekeeper).all.each do |item|
+      item.storekeeper.should eq(warehouse.storekeeper)
     end
   end
 end

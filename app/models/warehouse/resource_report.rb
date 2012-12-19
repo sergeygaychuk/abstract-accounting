@@ -33,7 +33,7 @@ module Warehouse
             #need refactoring
             state = scope(args).limit(args[:per_page] * (args[:page].to_i - 1)).select("state").
                 inject(0.0) do |mem, value|
-              mem += value.state.to_f
+              mem + value.state.to_f
             end
           end
           scope = scope.paginate(page: args[:page], per_page: args[:per_page])
@@ -55,10 +55,11 @@ module Warehouse
       end
 
       def total(args)
-        warehouse = Warehouse.all(where: { warehouse_id: { equal: args[:warehouse_id] },
-                                           'assets.id' => { equal_attr: args[:resource_id] } }).
-            first
-        warehouse ? warehouse.real_amount : 0.0
+        place = Warehouse::Place.by_place(args[:warehouse_id]).first
+        return 0.0 unless place
+        warehouse = Warehouse::Resource.by_warehouse(place).
+            with_resource_id(args[:resource_id]).first
+        warehouse ? warehouse.amount : 0.0
       end
 
       def scope(args)
