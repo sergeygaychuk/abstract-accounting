@@ -113,9 +113,9 @@ describe Warehouse::Waybill do
     deal.isOffBalance.should be_false
 
     wb = build(:waybill, distributor: wb.distributor,
-                                 distributor_place: wb.distributor_place,
-                                 storekeeper: wb.storekeeper,
-                                 storekeeper_place: wb.storekeeper_place)
+                         distributor_place: wb.distributor_place,
+                         storekeeper: wb.storekeeper,
+                         storekeeper_place: wb.storekeeper_place)
     wb.add_item(tag: 'roof', mu: 'm2', amount: 100, price: 10.0)
     wb.add_item(tag: 'hammer', mu: 'th', amount: 500, price: 100.0)
     last_deal_id = Deal.last.id + 1
@@ -592,26 +592,23 @@ describe Warehouse::Waybill do
   end
 
   it 'should show in warehouse' do
-    moscow = create(:place, tag: 'Moscow')
-    minsk = create(:place, tag: 'Minsk')
-    ivanov = create(:entity, tag: 'Ivanov')
-    petrov = create(:entity, tag: 'Petrov')
+    moscow = build(:warehouse)
+    moscow.save.should be_true
+    minsk = build(:warehouse)
+    minsk.save.should be_true
 
-    wb1 = build(:waybill, storekeeper: ivanov,
-                                  storekeeper_place: moscow)
+    wb1 = build(:waybill, warehouse: moscow)
     wb1.add_item(tag: 'roof', mu: 'rm', amount: 100, price: 120.0)
     wb1.add_item(tag: 'nails', mu: 'pcs', amount: 700, price: 1.0)
     wb1.save!
     wb1.apply.should be_true
-    wb2 = build(:waybill, storekeeper: ivanov,
-                                  storekeeper_place: moscow)
+    wb2 = build(:waybill, warehouse: moscow)
     wb2.add_item(tag: 'nails', mu: 'pcs', amount: 1200, price: 1.0)
     wb2.add_item(tag: 'nails', mu: 'kg', amount: 10, price: 150.0)
     wb2.add_item(tag: 'roof', mu: 'rm', amount: 50, price: 100.0)
     wb2.save!
     wb2.apply.should be_true
-    wb3 = build(:waybill, storekeeper: petrov,
-                                  storekeeper_place: minsk)
+    wb3 = build(:waybill, warehouse: minsk)
     wb3.add_item(tag: 'roof', mu: 'rm', amount: 500, price: 120.0)
     wb3.add_item(tag: 'nails', mu: 'kg', amount: 300, price: 150.0)
     wb3.save!
@@ -621,14 +618,12 @@ describe Warehouse::Waybill do
     Warehouse::Waybill.in_warehouse.include?(wb2).should be_true
     Warehouse::Waybill.in_warehouse.include?(wb3).should be_true
 
-    ds_moscow = build(:allocation, storekeeper: ivanov,
-                                   storekeeper_place: moscow)
+    ds_moscow = build(:allocation, warehouse: moscow)
     ds_moscow.add_item(tag: 'nails', mu: 'pcs', amount: 10)
     ds_moscow.add_item(tag: 'roof', mu: 'rm', amount: 4)
     ds_moscow.save!
     ds_moscow.apply.should be_true
-    ds_minsk = build(:allocation, storekeeper: petrov,
-                                  storekeeper_place: minsk)
+    ds_minsk = build(:allocation, warehouse: minsk)
     ds_minsk.add_item(tag: 'roof', mu: 'rm', amount: 400)
     ds_minsk.add_item(tag: 'nails', mu: 'kg', amount: 200)
     ds_minsk.save!
@@ -648,8 +643,7 @@ describe Warehouse::Waybill do
     wbs.include?(wb2).should be_true
     wbs.include?(wb3).should be_false
 
-    ds_moscow = build(:allocation, storekeeper: ivanov,
-                                   storekeeper_place: moscow)
+    ds_moscow = build(:allocation, warehouse: moscow)
     ds_moscow.add_item(tag: 'roof', mu: 'rm', amount: 146)
     ds_moscow.add_item(tag: 'nails', mu: 'pcs', amount: 1890)
     ds_moscow.save!
@@ -664,8 +658,7 @@ describe Warehouse::Waybill do
     wbs.include?(wb2).should be_false
     wbs.include?(wb3).should be_true
 
-    ds_minsk = build(:allocation, storekeeper: petrov,
-                                  storekeeper_place: minsk)
+    ds_minsk = build(:allocation, warehouse: minsk)
     ds_minsk.add_item(tag: 'roof', mu: 'rm', amount: 100)
     ds_minsk.add_item(tag: 'nails', mu: 'kg', amount: 100)
     ds_minsk.save!
@@ -680,8 +673,7 @@ describe Warehouse::Waybill do
     Warehouse::Waybill.in_warehouse.include?(wb2).should be_true
     Warehouse::Waybill.in_warehouse.include?(wb3).should be_false
 
-    wb4 = build(:waybill, storekeeper: ivanov,
-                          storekeeper_place: moscow)
+    wb4 = build(:waybill, warehouse: moscow)
     wb4.add_item(tag: 'roof', mu: 'rm', amount: 100, price: 120.0)
     wb4.add_item(tag: 'nails', mu: 'pcs', amount: 700, price: 1.0)
     wb4.save!
@@ -911,37 +903,6 @@ describe Warehouse::Waybill do
     Warehouse::Waybill.search({ 'state' => Warehouse::Waybill::CANCELED }).include?(wb2).should be_true
     Warehouse::Waybill.search({ 'state' => Warehouse::Waybill::REVERSED }).include?(wb).should be_true
     Warehouse::Waybill.search({ 'state' => Warehouse::Waybill::REVERSED }).include?(wb2).should be_false
-  end
-
-  it "should return all warehouses" do
-    5.times { create(:credential, document_type: Warehouse::Waybill.name) }
-    5.times { create(:credential) }
-    Warehouse::Waybill.warehouses.should =~ Credential.find_all_by_document_type(Warehouse::Waybill.name)
-
-    Warehouse::Waybill.warehouses.each do |w|
-      w.tag.should eq(Credential.find(w.id).place.tag)
-      w.storekeeper.should eq(Credential.find(w.id).user.entity.tag)
-    end
-  end
-
-  it "should convert warehouse_id in params" do
-    warehouse_id = Credential.find_all_by_document_type(Warehouse::Waybill.name).first.id
-    c = Credential.find(warehouse_id)
-    Warehouse::Waybill.extract_warehouse(warehouse_id).should eq({ storekeeper_place_id: c.place_id,
-                                                         storekeeper_id: c.user.entity_id,
-                                                         storekeeper_type: Entity.name })
-  end
-
-  it "should return warehouse_id" do
-    w = Warehouse::Waybill.first
-    u = create(:user, entity: w.storekeeper)
-    c = create(:credential, user: u, place: w.storekeeper_place, document_type: Warehouse::Waybill.name)
-    w.warehouse_id.should eq(c.id)
-    Warehouse::Waybill.new.warehouse_id.should eq(nil)
-    PaperTrail.whodunnit = u
-    Warehouse::Waybill.new.warehouse_id.should eq(c.id)
-    PaperTrail.whodunnit = RootUser.new
-    Warehouse::Waybill.new.warehouse_id.should eq(nil)
   end
 
   it 'should create limits on deals by waybill items' do

@@ -60,19 +60,20 @@ describe Document do
       Document.by_user(user).all.should =~ Document.where{item_type.in([Entity.name])}
       create(:chart)
       5.times do
-        wb = build(:waybill, storekeeper: user.entity)
+        warehouse = build(:warehouse, user: create(:user, entity: user.entity))
+        warehouse.save.should be_true
+        wb = build(:waybill, warehouse: warehouse)
         wb.add_item(tag: 'roof', mu: 'm2', amount: 2, price: 10.0)
         wb.save!
         wb.apply.should be_true
 
-        ds = build(:allocation, storekeeper: wb.storekeeper,
-                                storekeeper_place: wb.storekeeper_place)
+        ds = build(:allocation, warehouse: warehouse)
         ds.add_item(tag: 'roof', mu: 'm2', amount: 1)
         ds.save!
       end
       Document.by_user(user).all.should =~ Document.where{item_type.in([Entity.name])}.
           where{whodunnit == user.id.to_s}
-      credential = create(:credential, user: user, document_type: Waybill.name)
+      credential = create(:credential, user: user, document_type: Warehouse::Waybill.name)
       Document.by_user(user).all.should =~ Document.where{item_type.in([Entity.name])}.
                 where{whodunnit == user.id.to_s}
       5.times do
@@ -82,13 +83,15 @@ describe Document do
         wb.apply.should be_true
       end
       create(:credential, user: user,
-          place: credential.place, document_type: Allocation.name)
+          place: credential.place, document_type: Warehouse::Allocation.name)
       Document.by_user(user).all.should =~ Document.
-          where{item_type.in([Entity.name, Waybill.name])}.
-          joins{item(Waybill).outer.deal.outer.take.outer}.
+          where{item_type.in([Entity.name, Warehouse::Waybill.name])}.
+          joins{item(Warehouse::Waybill).outer.deal.outer.take.outer}.
           where{((item.deal.entity_id == user.entity_id) &
                 (item.deal.take.place_id == credential.place_id)) |
           (whodunnit == user.id.to_s)}.all
+
+      create(:credential, user: user, place: credential.place, document_type: Warehouse.name)
       5.times do
         wb = build(:waybill, storekeeper: user.entity, storekeeper_place: credential.place)
         wb.add_item(tag: 'roof', mu: 'm2', amount: 2, price: 10.0)
@@ -101,14 +104,14 @@ describe Document do
         ds.save!
       end
       Document.by_user(user).all.should =~ Document.
-          where{item_type.in([Entity.name, Waybill.name, Allocation.name])}.
+          where{item_type.in([Entity.name, Warehouse::Waybill.name, Warehouse::Allocation.name])}.
           where{id.in(
-            Version.joins{item(Waybill).deal.take}.
+            Version.joins{item(Warehouse::Waybill).deal.take}.
                     where{(item.deal.entity_id == user.entity_id) &
                           (item.deal.take.place_id == credential.place_id)}.
                     select{id}
           ) | id.in(
-            Version.joins{item(Allocation).deal.give}.
+            Version.joins{item(Warehouse::Allocation).deal.give}.
                     where{(item.deal.entity_id == user.entity_id) &
                           (item.deal.give.place_id == credential.place_id)}.
                     select{id}
@@ -152,7 +155,7 @@ describe Document do
     it 'should filtered records' do
       pending "disabled while fix filter with new allocation and waybill fields"
       create(:chart) unless Chart.count > 0
-      Version.where{item_type.in([Waybill.name, Allocation.name])}.delete_all
+      Version.where{item_type.in([Warehouse::Waybill.name, Warehouse::Allocation.name])}.delete_all
       items = []
       (0..2).each do |i|
         st = i < 2 ? create(:entity, tag: "storekeeper#{i}") :
@@ -163,9 +166,10 @@ describe Document do
                identifier_value: "ds_id_value#{i < 2 ? 1 : 2}")
         dsp = create(:place, tag: "ds_place#{i}")
 
+        warehouse = build(:warehouse, place: stp, user: create(:user, entity: st))
+        warehouse.save.should be_true
         wb = build(:waybill, document_id: "test_document_id#{i}",
-               storekeeper: st, storekeeper_place: stp, distributor: ds,
-               distributor_place: dsp)
+                   warehouse: warehouse, distributor: ds, distributor_place: dsp)
         wb.add_item(tag: 'roof', mu: 'm2', amount: 2, price: 1.0)
         wb.save!
         wb.apply.should be_true
@@ -173,8 +177,7 @@ describe Document do
 
         fr = create(:entity, tag: "foreman#{i}")
         frp = create(:place, tag: "fr_place#{i}")
-        dsn = build(:allocation, storekeeper: st,
-                storekeeper_place: stp, foreman: fr, foreman_place: frp)
+        dsn = build(:allocation, warehouse: warehouse, foreman: fr, foreman_place: frp)
         dsn.add_item(tag: 'roof', mu: 'm2', amount: 1)
         dsn.save!
         items << dsn
@@ -190,29 +193,29 @@ describe Document do
 
       Document.filter().should eq(Document.all)
 
-      filtered = items.select { |i| i.kind_of?(Waybill) }
+      filtered = items.select { |i| i.kind_of?(Warehouse::Waybill) }
       Document.filter(waybill: { created: Date.today.to_s[0,2] }).lasts
         .map { |v| v.item }.should =~ filtered
 
-      filtered = items.select { |i| i.kind_of?(Waybill) &&
+      filtered = items.select { |i| i.kind_of?(Warehouse::Waybill) &&
                                     i.document_id == 'test_document_id1'}
       Document.filter(waybill: { document_id: 'test_document_id1' }).lasts
         .map { |v| v.item }.should =~ filtered
 
-      filtered = items.select { |i| i.kind_of?(Waybill) && i.storekeeper == st}
+      filtered = items.select { |i| i.kind_of?(Warehouse::Waybill) && i.storekeeper == st}
       Document.filter(waybill: {
                         storekeeper: {
                           entity: { tag: 'storekeeper1'}}}).lasts.map { |v| v.item }.
         should =~ filtered
 
-      filtered = items.select { |i| i.kind_of?(Waybill) &&
+      filtered = items.select { |i| i.kind_of?(Warehouse::Waybill) &&
                                     i.storekeeper_place == stp}
       Document.filter(waybill: {
                         storekeeper_place: {
                           place: { tag: 'sk_place1'}}}).lasts.map { |v| v.item }.
         should =~ filtered
 
-      filtered = items.select { |i| i.kind_of?(Waybill) && i.distributor == ds}
+      filtered = items.select { |i| i.kind_of?(Warehouse::Waybill) && i.distributor == ds}
       Document.filter(waybill: {
                         distributor: {
                           legal_entity: {
@@ -221,14 +224,14 @@ describe Document do
                             name: 'ds_name1'}}}).lasts.map { |v| v.item }.
         should =~ filtered
 
-      filtered = items.select { |i| i.kind_of?(Waybill) &&
+      filtered = items.select { |i| i.kind_of?(Warehouse::Waybill) &&
                                     i.distributor_place == dsp}
       Document.filter(waybill: {
                         distributor_place: {
                           place: { tag: 'ds_place1'}}}).lasts.map { |v| v.item }.
         should =~ filtered
 
-      filtered = items.select { |i| i.kind_of?(Waybill) &&
+      filtered = items.select { |i| i.kind_of?(Warehouse::Waybill) &&
         i.storekeeper == st && i.storekeeper_place == stp}
       Document.filter(waybill: {
                         storekeeper: {
@@ -237,7 +240,7 @@ describe Document do
                           place: { tag: stp.tag}}}).lasts.map { |v| v.item }.
         should =~ filtered
 
-      filtered = items.select { |i| i.kind_of?(Waybill) &&
+      filtered = items.select { |i| i.kind_of?(Warehouse::Waybill) &&
         i.storekeeper == st && i.storekeeper_place == stp}
       Document.filter(waybill: {
                         storekeeper: {
@@ -251,7 +254,7 @@ describe Document do
                        allocation: { created: Date.today.to_s[0,2] }).lasts
         .count.should eq(items.count)
 
-      filtered = items.select { |i| (i.kind_of?(Waybill) &&
+      filtered = items.select { |i| (i.kind_of?(Warehouse::Waybill) &&
         i.storekeeper == st) || (i.kind_of?(Allocation) && i.storekeeper == st) }
       Document.filter(waybill: {
                         storekeeper: {
@@ -263,32 +266,32 @@ describe Document do
                         created: Date.today.to_s[0,2] }).lasts.map { |v| v.item }.
         should =~ filtered
 
-      filtered = items.select { |i| i.kind_of?(Allocation) && i.state == 1}
+      filtered = items.select { |i| i.kind_of?(Warehouse::Allocation) && i.state == 1}
       Document.filter(allocation: { state: '1' }).lasts
         .map { |v| v.item }.should =~ filtered
 
-      filtered = items.select { |i| i.kind_of?(Allocation) &&
+      filtered = items.select { |i| i.kind_of?(Warehouse::Allocation) &&
                                     i.storekeeper == st}
       Document.filter(allocation: {
                         storekeeper: {
                           entity: { tag: 'storekeeper1'}}}).lasts.map { |v| v.item }.
         should =~ filtered
 
-      filtered = items.select { |i| i.kind_of?(Allocation) &&
+      filtered = items.select { |i| i.kind_of?(Warehouse::Allocation) &&
                                     i.storekeeper_place == stp}
       Document.filter(allocation: {
                         storekeeper_place: {
                           place: { tag: 'sk_place1'}}}).lasts.map { |v| v.item }.
         should =~ filtered
 
-      filtered = items.select { |i| i.kind_of?(Allocation) &&
+      filtered = items.select { |i| i.kind_of?(Warehouse::Allocation) &&
                                     i.foreman == fr}
       Document.filter(allocation: {
                         foreman: {
                           entity: { tag: 'foreman1'}}}).lasts.map { |v| v.item }.
         should =~ filtered
 
-      filtered = items.select { |i| i.kind_of?(Allocation) &&
+      filtered = items.select { |i| i.kind_of?(Warehouse::Allocation) &&
                                     i.foreman_place == frp}
       Document.filter(allocation: {
                         foreman_place: {

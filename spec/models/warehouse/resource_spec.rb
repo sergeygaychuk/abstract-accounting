@@ -25,6 +25,7 @@ describe Warehouse::Resource do
   it { should delegate_method(:tag).to(:resource) }
   it { should delegate_method(:mu).to(:resource) }
   it { should delegate_method(:state).to(:deal) }
+  it { should delegate_method(:amount).to(:state) }
 
   context "with created waybills" do
     before :all do
@@ -37,8 +38,7 @@ describe Warehouse::Resource do
         warehouse = build(:warehouse)
         warehouse.save.should be_true
         3.times do
-          waybill = build(:waybill, storekeeper: warehouse.storekeeper,
-                          storekeeper_place: warehouse.place)
+          waybill = build(:waybill, warehouse: warehouse)
           @assets << (asset = create(:asset))
           waybill.add_item(tag: asset.tag, mu: asset.mu, amount: 100.12, price: 23.22)
           @assets << (asset = create(:asset))
@@ -59,7 +59,7 @@ describe Warehouse::Resource do
         memo + waybill.items.collect { |item| item.resource }
       end
       Warehouse::Resource.by_warehouse(warehouse).all.
-          collect { |r| r.resource }.should =~ assets
+          collect { |r| r.resource }.should =~ assets.uniq
     end
 
     describe "#deal" do
@@ -82,8 +82,7 @@ describe Warehouse::Resource do
     asset1 = create(:asset)
     asset2 = create(:asset)
     3.times do
-      waybill = build(:waybill, storekeeper: warehouse.storekeeper,
-                      storekeeper_place: warehouse.place)
+      waybill = build(:waybill, warehouse: warehouse)
       waybill.add_item(tag: asset1.tag, mu: asset1.mu, amount: 100.12, price: 23.22)
       waybill.add_item(tag: asset2.tag, mu: asset2.mu, amount: 100.12, price: 23.22)
       waybill.save.should be_true
@@ -102,8 +101,7 @@ describe Warehouse::Resource do
       asset1 = create(:asset)
       asset2 = create(:asset)
       3.times do
-        waybill = build(:waybill, storekeeper: warehouse.storekeeper,
-                        storekeeper_place: warehouse.place)
+        waybill = build(:waybill, warehouse: warehouse)
         waybill.add_item(tag: asset1.tag, mu: asset1.mu, amount: 100.12, price: 23.22)
         waybill.add_item(tag: asset2.tag, mu: asset2.mu, amount: 100.12, price: 23.22)
         waybill.save.should be_true
@@ -141,14 +139,12 @@ describe Warehouse::Resource do
     end
 
     before :all do
-      wb = build(:waybill, storekeeper: warehouse.storekeeper,
-                 storekeeper_place: warehouse.place)
+      wb = build(:waybill, warehouse: warehouse)
       wb.add_item(tag: roof_rm.tag, mu: roof_rm.mu, amount: 100, price: 120.0)
       wb.add_item(tag: nails_pcs.tag, mu: nails_pcs.mu, amount: 700, price: 1.0)
       wb.save!
       wb.apply
-      wb = build(:waybill, storekeeper: warehouse.storekeeper,
-                 storekeeper_place: warehouse.place)
+      wb = build(:waybill, warehouse: warehouse)
       wb.add_item(tag: nails_pcs.tag, mu: nails_pcs.mu, amount: 1200, price: 1.0)
       wb.add_item(tag: nails_kg.tag, mu: nails_kg.mu, amount: 10, price: 150.0)
       wb.add_item(tag: roof_rm.tag, mu: roof_rm.mu, amount: 50, price: 100.0)
@@ -205,14 +201,12 @@ describe Warehouse::Resource do
     end
 
     before :all do
-      wb = build(:waybill, storekeeper: warehouse.storekeeper,
-                 storekeeper_place: warehouse.place)
+      wb = build(:waybill, warehouse: warehouse)
       wb.add_item(tag: roof_rm.tag, mu: roof_rm.mu, amount: 100, price: 120.0)
       wb.add_item(tag: nails_pcs.tag, mu: nails_pcs.mu, amount: 700, price: 1.0)
       wb.save!
       wb.apply
-      wb = build(:waybill, storekeeper: warehouse.storekeeper,
-                 storekeeper_place: warehouse.place)
+      wb = build(:waybill, warehouse: warehouse)
       wb.add_item(tag: nails_pcs.tag, mu: nails_pcs.mu, amount: 1200, price: 1.0)
       wb.add_item(tag: nails_kg.tag, mu: nails_kg.mu, amount: 10, price: 150.0)
       wb.add_item(tag: roof_rm.tag, mu: roof_rm.mu, amount: 50, price: 100.0)
@@ -236,6 +230,160 @@ describe Warehouse::Resource do
       scope = Warehouse::Resource.sort(:amount, "DESC").by_warehouse(warehouse)
       scope.count.size.should eq(3)
       scope.all.collect{ |item| item.resource }.should eq([nails_pcs, roof_rm, nails_kg])
+    end
+  end
+
+  context "with allocations" do
+    let(:moscow) do
+      moscow = build(:warehouse)
+      moscow.save
+      moscow
+    end
+    let(:minsk) do
+      minsk = build(:warehouse)
+      minsk.save
+      minsk
+    end
+
+    before :all do
+      wb = build(:waybill, warehouse: moscow)
+      wb.add_item(tag: 'roof', mu: 'rm', amount: 100, price: 120.0)
+      wb.add_item(tag: 'nails', mu: 'pcs', amount: 700, price: 1.0)
+      wb.save!
+      wb.apply
+      wb = build(:waybill, warehouse: moscow)
+      wb.add_item(tag: 'nails', mu: 'pcs', amount: 1200, price: 1.0)
+      wb.add_item(tag: 'nails', mu: 'kg', amount: 10, price: 150.0)
+      wb.add_item(tag: 'roof', mu: 'rm', amount: 50, price: 100.0)
+      wb.save!
+      wb.apply
+      wb = build(:waybill, warehouse: minsk)
+      wb.add_item(tag: 'roof', mu: 'rm', amount: 500, price: 120.0)
+      wb.add_item(tag: 'nails', mu: 'kg', amount: 300, price: 150.0)
+      wb.save!
+      wb.apply
+    end
+
+    it "should return all data" do
+      Warehouse::Resource.by_warehouse(moscow).count.size.should eq(3)
+      Warehouse::Resource.by_warehouse(minsk).count.size.should eq(2)
+
+      Warehouse::Resource.by_warehouse(moscow).all.each do |item|
+        if item.resource == Asset.find_by_tag_and_mu("roof", "rm")
+          item.amount.should eq(150)
+        elsif item.resource == Asset.find_by_tag_and_mu("nails", "pcs")
+          item.amount.should eq(1900)
+        elsif item.resource == Asset.find_by_tag_and_mu("nails", "kg")
+          item.amount.should eq(10)
+        else
+          "Unknown resource".should be_empty
+        end
+      end
+      Warehouse::Resource.by_warehouse(minsk).all.each do |item|
+        if item.resource == Asset.find_by_tag_and_mu("roof", "rm")
+          item.amount.should eq(500)
+        elsif item.resource == Asset.find_by_tag_and_mu("nails", "kg")
+          item.amount.should eq(300)
+        else
+          "Unknown resource".should be_empty
+        end
+      end
+    end
+
+    it "should return all data if allocations state is inwork" do
+      ds_moscow = build(:allocation, warehouse: moscow)
+      ds_moscow.add_item(tag: 'nails', mu: 'pcs', amount: 510)
+      ds_moscow.add_item(tag: 'roof', mu: 'rm', amount: 7)
+      ds_moscow.save!
+      ds_minsk = build(:allocation, warehouse: minsk)
+      ds_minsk.add_item(tag: 'roof', mu: 'rm', amount: 500)
+      ds_minsk.add_item(tag: 'nails', mu: 'kg', amount: 85)
+      ds_minsk.save!
+      Warehouse::Resource.by_warehouse(moscow).count.size.should eq(3)
+      Warehouse::Resource.by_warehouse(minsk).count.size.should eq(2)
+
+      Warehouse::Resource.by_warehouse(moscow).all.each do |item|
+        if item.resource == Asset.find_by_tag_and_mu("roof", "rm")
+          item.amount.should eq(150)
+        elsif item.resource == Asset.find_by_tag_and_mu("nails", "pcs")
+          item.amount.should eq(1900)
+        elsif item.resource == Asset.find_by_tag_and_mu("nails", "kg")
+          item.amount.should eq(10)
+        else
+          "Unknown resource".should be_empty
+        end
+      end
+      Warehouse::Resource.by_warehouse(minsk).all.each do |item|
+        if item.resource == Asset.find_by_tag_and_mu("roof", "rm")
+          item.amount.should eq(500)
+        elsif item.resource == Asset.find_by_tag_and_mu("nails", "kg")
+          item.amount.should eq(300)
+        else
+          "Unknown resource".should be_empty
+        end
+      end
+    end
+
+    it "should return all data if allocation is closed" do
+      ds_minsk = build(:allocation, warehouse: minsk)
+      ds_minsk.add_item(tag: 'roof', mu: 'rm', amount: 500)
+      ds_minsk.add_item(tag: 'nails', mu: 'kg', amount: 85)
+      ds_minsk.save!
+      ds_minsk.cancel.should be_true
+      Warehouse::Resource.by_warehouse(moscow).count.size.should eq(3)
+      Warehouse::Resource.by_warehouse(minsk).count.size.should eq(2)
+
+      Warehouse::Resource.by_warehouse(moscow).all.each do |item|
+        if item.resource == Asset.find_by_tag_and_mu("roof", "rm")
+          item.amount.should eq(150)
+        elsif item.resource == Asset.find_by_tag_and_mu("nails", "pcs")
+          item.amount.should eq(1900)
+        elsif item.resource == Asset.find_by_tag_and_mu("nails", "kg")
+          item.amount.should eq(10)
+        else
+          "Unknown resource".should be_empty
+        end
+      end
+      Warehouse::Resource.by_warehouse(minsk).all.each do |item|
+        if item.resource == Asset.find_by_tag_and_mu("roof", "rm")
+          item.amount.should eq(500)
+        elsif item.resource == Asset.find_by_tag_and_mu("nails", "kg")
+          item.amount.should eq(300)
+        else
+          "Unknown resource".should be_empty
+        end
+      end
+    end
+
+    it "should return less amount if allocation is applied" do
+      ds_moscow = build(:allocation, warehouse: moscow)
+      ds_moscow.add_item(tag: 'nails', mu: 'pcs', amount: 510)
+      ds_moscow.add_item(tag: 'roof', mu: 'rm', amount: 7)
+      ds_moscow.save!
+      ds_moscow.apply
+      Warehouse::Resource.by_warehouse(moscow).count.size.should eq(3)
+      Warehouse::Resource.by_warehouse(minsk).count.size.should eq(2)
+
+      Warehouse::Resource.by_warehouse(moscow).all.each do |item|
+        if item.resource == Asset.find_by_tag_and_mu("roof", "rm")
+          item.amount.should eq(143)
+        elsif item.resource == Asset.find_by_tag_and_mu("nails", "pcs")
+          item.amount.should eq(1390)
+        elsif item.resource == Asset.find_by_tag_and_mu("nails", "kg")
+          item.amount.should eq(10)
+        else
+          "Unknown resource".should be_empty
+        end
+      end
+      Warehouse::Resource.by_warehouse(minsk).all.each do |item|
+        if item.resource == Asset.find_by_tag_and_mu("roof", "rm")
+          item.amount.should eq(500)
+        elsif item.resource == Asset.find_by_tag_and_mu("nails", "kg")
+          item.amount.should eq(300)
+        else
+          "Unknown resource".should be_empty
+        end
+      end
     end
   end
 end

@@ -80,8 +80,8 @@ module Warehouse
                 select{deal.rules.from.rate.as(:price)}.first
             price = (1.0 / Converter.float(price_obj.price))
           end
-          WarehouseForemanReport.new(resource: fact.resource, amount: fact.amount,
-                                     price: Converter.float(price).accounting_norm)
+          ForemanReport.new(resource: fact.resource, amount: fact.amount,
+                            price: Converter.float(price).accounting_norm)
         end
       end
 

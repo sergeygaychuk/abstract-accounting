@@ -521,4 +521,23 @@ describe Warehouse::Deal do
       end
     end
   end
+
+  describe "#warehouse" do
+    it "should assign warehouse data to storekeeper and storekeeper_place" do
+      warehouse = build(:warehouse)
+      warehouse.save.should be_true
+      object = TestWarehouseDeal.new
+      object.warehouse = warehouse
+      object.storekeeper.should eq(warehouse.storekeeper)
+      object.storekeeper_place.should eq(warehouse.place)
+    end
+
+    it "should return warehouse data from storekeeper and storekeeper_place" do
+      warehouse = build(:warehouse)
+      warehouse.save.should be_true
+      object = TestWarehouseDeal.new storekeeper: warehouse.storekeeper,
+                                     storekeeper_place: warehouse.place
+      object.warehouse.should eq(warehouse)
+    end
+  end
 end

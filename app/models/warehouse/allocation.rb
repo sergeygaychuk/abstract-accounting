@@ -40,9 +40,10 @@ module Warehouse
                    reader: -> { self.deal.nil? ? nil : self.deal.take.place }
 
     class << self
-      def by_warehouse(place)
+      def by_warehouse(warehouse)
         joins{deal.give}.
-            where{deal.give.place_id == place.id}
+            where{deal.give.place_id == warehouse.place_id}.
+            where{deal.entity_id == warehouse.storekeeper.id}
       end
 
       def order_by(attrs = {})
@@ -101,13 +102,13 @@ module Warehouse
               mem.where{lower(deal.rules.from.give.resource.tag).like(lower("%#{value}%"))}
             when 'state'
               case value.to_i
-                when INWORK
+                when Helpers::Statable::INWORK
                   mem.where{deal.deal_state.closed == nil}
-                when APPLIED
+                when Helpers::Statable::APPLIED
                   mem.where{(deal.deal_state.closed != nil) & (deal.to_facts.amount == 1.0)}
-                when CANCELED
+                when Helpers::Statable::CANCELED
                   mem.where{(deal.deal_state.closed != nil) & (deal.to_facts.id == nil)}
-                when REVERSED
+                when Helpers::Statable::REVERSED
                   mem.where{(deal.deal_state.closed != nil) & (deal.to_facts.amount == -1.0)}
               end
             when 'created'
@@ -138,8 +139,8 @@ module Warehouse
 
     def foreman_place_or_new
       return ::Place.find(self.foreman_place.id) if self.foreman_place
-      if self.warehouse_id
-        ::Place.find(Allocation.extract_warehouse(self.warehouse_id)[:storekeeper_place_id])
+      if self.storekeeper_place
+        self.storekeeper_place
       else
         ::Place.new
       end

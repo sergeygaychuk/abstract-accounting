@@ -62,25 +62,6 @@ module Warehouse
         attr_place = "#{attr_name}_place"
         validates_presence_of attr_name.to_sym, attr_place.to_sym
       end
-
-      def warehouses
-        Credential.class_eval do
-          def tag
-            self.place.tag
-          end
-          def storekeeper
-            self.user.entity.tag
-          end
-        end
-        Credential.find_all_by_document_type(self.name)
-      end
-
-      def extract_warehouse(warehouse_id)
-        c = Credential.find(warehouse_id)
-        { storekeeper_place_id: c.place_id,
-          storekeeper_id: c.user.entity_id,
-          storekeeper_type: Entity.name }
-      end
     end
 
     def add_item(attrs = {})
@@ -109,33 +90,20 @@ module Warehouse
       @items
     end
 
-    def warehouse_id
-      klass = self.class.name
-      if self.storekeeper
-        storekeeper_id = self.storekeeper.id
-        storekeeper_place_id = self.storekeeper_place.id
-        c = Credential.
-              where{(place_id == my{storekeeper_place_id}) & (document_type == my{klass})}.
-              where{user_id.in(User.where{entity_id == my{storekeeper_id}}.pluck(:id))}.first
-        c ? c.id : nil
-      elsif PaperTrail.whodunnit
-        user = PaperTrail.whodunnit
-        if user.root?
-          nil
-        else
-          c = Credential.where{(user_id == my{user.id}) & (document_type == my{klass})}.first
-          c ? c.id : nil
-        end
-      else
-        nil
-      end
+    #def owner?
+    #  user = PaperTrail.whodunnit
+    #  return false if user.root?
+    #  return !self.warehouse_id.nil? if self.new_record?
+    #  self.storekeeper == user.entity
+    #end
+
+    def warehouse=(warehouse)
+      self.storekeeper = warehouse.storekeeper
+      self.storekeeper_place = warehouse.place
     end
 
-    def owner?
-      user = PaperTrail.whodunnit
-      return false if user.root?
-      return !self.warehouse_id.nil? if self.new_record?
-      self.storekeeper == user.entity
+    def warehouse
+      Warehouse::Place.by_place(self.storekeeper_place).by_storekeeper(self.storekeeper).first
     end
 
     def create_deal(give_resource, take_resource, from_place, to_place, entity, rate, item_idx)

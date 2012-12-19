@@ -18,6 +18,9 @@ describe Warehouse::Allocation do
     @wb.add_item(tag: 'nails', mu: 'kg', amount: 10, price: 150.0)
     @wb.save!
     @wb.apply
+
+    Warehouse::Place.new(place: @wb.storekeeper_place,
+                         user: create(:user, entity: @wb.storekeeper)).save
   end
 
   it 'should have next behaviour' do
@@ -86,7 +89,7 @@ describe Warehouse::Allocation do
     deal.entity.should eq(db.storekeeper)
     deal.isOffBalance.should be_true
 
-    roof_deal_tag = Waybill.first.deal.rules.joins{to.give}.
+    roof_deal_tag = Warehouse::Waybill.first.deal.rules.joins{to.give}.
         where{to.give.resource_id == db.items.first.resource.id}.first.to.tag
     deal = db.create_storekeeper_deal(db.items[0], 0)
     deal.tag.should eq(roof_deal_tag)
@@ -342,54 +345,50 @@ describe Warehouse::Allocation do
   end
 
   it "should filter by warehouse" do
-    moscow = create(:place)
-    minsk = create(:place)
-    ivanov = create(:entity)
-    petrov = create(:entity)
+    moscow = build(:warehouse)
+    moscow.save.should be_true
+    minsk = build(:warehouse)
+    minsk.save.should be_true
 
-    wb1 = build(:waybill, storekeeper: ivanov,
-                          storekeeper_place: moscow)
+    wb1 = build(:waybill, warehouse: moscow)
     wb1.add_item(tag: 'roof', mu: 'rm', amount: 100, price: 120.0)
     wb1.add_item(tag: 'nails', mu: 'pcs', amount: 700, price: 1.0)
     wb1.save!
     wb1.apply
 
-    db1 = build(:allocation, storekeeper: ivanov,
-                            storekeeper_place: moscow)
+    db1 = build(:allocation, warehouse: moscow)
     db1.add_item(tag: 'roof', mu: 'rm', amount: 5)
     db1.add_item(tag: 'nails', mu: 'pcs', amount: 10)
     db1.save!
 
-    wb2 = build(:waybill, storekeeper: ivanov,
-                                  storekeeper_place: moscow)
+    wb2 = build(:waybill, warehouse: moscow)
     wb2.add_item(tag: 'nails', mu: 'pcs', amount: 1200, price: 1.0)
     wb2.add_item(tag: 'nails', mu: 'kg', amount: 10, price: 150.0)
     wb2.add_item(tag: 'roof', mu: 'rm', amount: 50, price: 100.0)
     wb2.save!
     wb2.apply
 
-    db2 = build(:allocation, storekeeper: ivanov,
-                            storekeeper_place: moscow)
+    db2 = build(:allocation, warehouse: moscow)
     db2.add_item(tag: 'roof', mu: 'rm', amount: 5)
     db2.add_item(tag: 'nails', mu: 'pcs', amount: 10)
     db2.save!
 
-    wb3 = build(:waybill, storekeeper: petrov,
-                                  storekeeper_place: minsk)
+    wb3 = build(:waybill, warehouse: minsk)
     wb3.add_item(tag: 'roof', mu: 'rm', amount: 500, price: 120.0)
     wb3.add_item(tag: 'nails', mu: 'kg', amount: 300, price: 150.0)
     wb3.save!
     wb3.apply
 
-    db3 = build(:allocation, storekeeper: petrov,
-                            storekeeper_place: minsk)
+    db3 = build(:allocation, warehouse: minsk)
     db3.add_item(tag: 'roof', mu: 'rm', amount: 5)
     db3.add_item(tag: 'nails', mu: 'kg', amount: 10)
     db3.save!
 
     Warehouse::Allocation.by_warehouse(moscow).should =~ [db1, db2]
     Warehouse::Allocation.by_warehouse(minsk).should =~ [db3]
-    Warehouse::Allocation.by_warehouse(create(:place)).all.should be_empty
+    warehouse = build(:warehouse)
+    warehouse.save.should be_true
+    Warehouse::Allocation.by_warehouse(warehouse).all.should be_empty
   end
 
   it 'should sort allocations' do
@@ -400,6 +399,11 @@ describe Warehouse::Allocation do
     petrov = create(:entity, tag: 'Petrov1')
     antonov = create(:entity, tag: 'Antonov1')
     pupkin = create(:entity, tag: 'Pupkin')
+
+    build(:warehouse, place: moscow, user: create(:user, entity: ivanov)).save.should be_true
+    build(:warehouse, place: kiev, user: create(:user, entity: pupkin)).save.should be_true
+    build(:warehouse, place: amsterdam,
+          user: create(:user, entity: antonov)).save.should be_true
 
     wb1 = build(:waybill, created: Date.new(2011,11,11), document_id: 11,
                 distributor: petrov, storekeeper: ivanov,
@@ -484,6 +488,11 @@ describe Warehouse::Allocation do
     antonov = create(:entity)
     pupkin = create(:entity)
 
+    build(:warehouse, place: moscow, user: create(:user, entity: ivanov)).save.should be_true
+    build(:warehouse, place: kiev, user: create(:user, entity: pupkin)).save.should be_true
+    build(:warehouse, place: amsterdam,
+          user: create(:user, entity: antonov)).save.should be_true
+
     wb1 = build(:waybill, created: Date.new(2011,12,11), document_id: 111,
                 distributor: petrov, storekeeper: ivanov,
                 storekeeper_place: moscow)
@@ -534,8 +543,9 @@ describe Warehouse::Allocation do
           like(lower("%#{al1.created.strftime('%Y-%m-%d')[0, 4]}%"))}
     Warehouse::Allocation.search({"created" => DateTime.now.strftime('%Y-%m-%d')}).should be_empty
 
-    Warehouse::Allocation.search({"state" => Warehouse::Allocation::INWORK}).should =~ Warehouse::Allocation.
-        joins{deal.deal_state}.where{deal.deal_state.closed == nil}
+    Warehouse::Allocation.search({state: Warehouse::Allocation::INWORK}).
+        should =~ Warehouse::Allocation.joins{deal.deal_state}.
+        where{deal.deal_state.closed == nil}
 
     Warehouse::Allocation.search({"storekeeper" => al1.storekeeper.tag}).should =~ [al1]
     Warehouse::Allocation.search({"storekeeper" => al1.storekeeper.tag[0, 4]}).
@@ -616,6 +626,9 @@ describe Warehouse::Allocation do
         wb.save!
         wb.apply
 
+        build(:warehouse, place: wb.storekeeper_place,
+              user: create(:user, entity: wb.storekeeper)).save.should be_true
+
         db = build(:allocation, storekeeper: wb.storekeeper,
                                 storekeeper_place: wb.storekeeper_place)
         db.add_item(tag: 'roof', mu: 'm2', amount: 300)
@@ -657,6 +670,8 @@ describe Warehouse::AllocationItemsValidator do
     wb.add_item(tag: 'nails', mu: 'pcs', amount: 1200, price: 1.0)
     wb.save!
     wb.apply
+    build(:warehouse, place: wb.storekeeper_place,
+          user: create(:user, entity: wb.storekeeper)).save.should be_true
 
     db = build(:allocation, storekeeper: wb.storekeeper,
                             storekeeper_place: wb.storekeeper_place)

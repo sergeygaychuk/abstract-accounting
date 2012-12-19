@@ -19,6 +19,10 @@ Warehouse::ResourceReport.class_eval do
 end
 
 describe Warehouse::ResourceReport do
+  before :all do
+    create(:chart)
+  end
+
   it "should return empty state for unknown resource" do
     Warehouse::ResourceReport.all(resource_id: create(:asset).id,
                                 warehouse_id: create(:place).id).should be_empty
@@ -29,22 +33,21 @@ describe Warehouse::ResourceReport do
   end
 
   it "should return states from waybills" do
-    create(:chart)
-    storekeeper = create(:entity)
-    warehouse = create(:place)
+    warehouse = build(:warehouse)
+    warehouse.save.should be_true
     resource = create(:asset)
     count = 3
 
     count.times do
-      waybill = build(:waybill, storekeeper: storekeeper, storekeeper_place: warehouse)
+      waybill = build(:waybill, warehouse: warehouse)
       waybill.add_item(tag: resource.tag, mu: resource.mu, amount: rand(1..10), price: 11.32)
       waybill.save!
       waybill.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.id)
+    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
     Warehouse::ResourceReport.
-        count(resource_id: resource.id, warehouse_id: warehouse.id).should eq(count)
+        count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count)
     state = 0.0
     report.count.should eq(count)
     report.each do |item|
@@ -71,26 +74,25 @@ describe Warehouse::ResourceReport do
     end
 
     Warehouse::ResourceReport.
-        total(resource_id: resource.id, warehouse_id: warehouse.id).should eq(state)
+        total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 
   it "should return states from waybills without reversed waybill" do
-    create(:chart)
-    storekeeper = create(:entity)
-    warehouse = create(:place)
+    warehouse = build(:warehouse)
+    warehouse.save.should be_true
     resource = create(:asset)
     count = 3
 
     count.times do
-      waybill = build(:waybill, storekeeper: storekeeper, storekeeper_place: warehouse)
+      waybill = build(:waybill, warehouse: warehouse)
       waybill.add_item(tag: resource.tag, mu: resource.mu, amount: rand(1..10), price: 11.32)
       waybill.save!
       waybill.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.id)
+    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
     Warehouse::ResourceReport.
-        count(resource_id: resource.id, warehouse_id: warehouse.id).should eq(count)
+        count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count)
     state = 0.0
     report.count.should eq(count)
     report.each do |item|
@@ -117,16 +119,16 @@ describe Warehouse::ResourceReport do
     end
 
     Warehouse::ResourceReport.
-        total(resource_id: resource.id, warehouse_id: warehouse.id).should eq(state)
+        total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
 
-    waybill = build(:waybill, storekeeper: storekeeper, storekeeper_place: warehouse)
+    waybill = build(:waybill, warehouse: warehouse)
     waybill.add_item(tag: resource.tag, mu: resource.mu, amount: rand(1..10), price: 11.32)
     waybill.save!
     waybill.apply.should be_true
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.id)
+    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
     Warehouse::ResourceReport.
-        count(resource_id: resource.id, warehouse_id: warehouse.id).should eq(count + 1)
+        count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count + 1)
     state = 0.0
     report.count.should eq(count + 1)
     report.each do |item|
@@ -151,13 +153,13 @@ describe Warehouse::ResourceReport do
     end
 
     Warehouse::ResourceReport.
-        total(resource_id: resource.id, warehouse_id: warehouse.id).should eq(state)
+        total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
 
     waybill.reverse.should be_true
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.id)
+    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
     Warehouse::ResourceReport.
-        count(resource_id: resource.id, warehouse_id: warehouse.id).should eq(count)
+        count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count)
     state = 0.0
     report.count.should eq(count)
     report.each do |item|
@@ -183,32 +185,31 @@ describe Warehouse::ResourceReport do
     end
 
     Warehouse::ResourceReport.
-        total(resource_id: resource.id, warehouse_id: warehouse.id).should eq(state)
+        total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 
   it "should return states from waybills and allocations" do
-    create(:chart)
-    storekeeper = create(:entity)
-    warehouse = create(:place)
+    warehouse = build(:warehouse)
+    warehouse.save.should be_true
     resource = create(:asset)
     count = 3
 
     count.times do
-      waybill = build(:waybill, storekeeper: storekeeper, storekeeper_place: warehouse)
+      waybill = build(:waybill, warehouse: warehouse)
       waybill.add_item(tag: resource.tag, mu: resource.mu, amount: rand(1..10), price: 11.32)
       waybill.save!
       waybill.apply.should be_true
 
-      allocation = build(:allocation, storekeeper: storekeeper, storekeeper_place: warehouse)
+      allocation = build(:allocation, warehouse: warehouse)
       allocation.add_item(tag: resource.tag, mu: resource.mu,
                 amount: (waybill.items[0].amount / 2) > 0 ? (waybill.items[0].amount / 2) : 1)
       allocation.save!
       allocation.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.id)
+    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
     Warehouse::ResourceReport.
-        count(resource_id: resource.id, warehouse_id: warehouse.id).should eq(count * 2)
+        count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2)
     state = 0
     report.count.should eq(count * 2)
     report.each do |item|
@@ -262,32 +263,31 @@ describe Warehouse::ResourceReport do
     end
 
     Warehouse::ResourceReport.
-        total(resource_id: resource.id, warehouse_id: warehouse.id).should eq(state)
+        total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 
   it "should return states from waybills and allocations without reversed allocations" do
-    create(:chart)
-    storekeeper = create(:entity)
-    warehouse = create(:place)
+    warehouse = build(:warehouse)
+    warehouse.save.should be_true
     resource = create(:asset)
     count = 3
 
     count.times do
-      waybill = build(:waybill, storekeeper: storekeeper, storekeeper_place: warehouse)
+      waybill = build(:waybill, warehouse: warehouse)
       waybill.add_item(tag: resource.tag, mu: resource.mu, amount: rand(1..10), price: 11.32)
       waybill.save!
       waybill.apply.should be_true
 
-      allocation = build(:allocation, storekeeper: storekeeper, storekeeper_place: warehouse)
+      allocation = build(:allocation, warehouse: warehouse)
       allocation.add_item(tag: resource.tag, mu: resource.mu,
                 amount: (waybill.items[0].amount / 2) > 0 ? (waybill.items[0].amount / 2) : 1)
       allocation.save!
       allocation.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.id)
+    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
     Warehouse::ResourceReport.
-        count(resource_id: resource.id, warehouse_id: warehouse.id).should eq(count * 2)
+        count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2)
     state = 0
     report.count.should eq(count * 2)
     report.each do |item|
@@ -341,23 +341,23 @@ describe Warehouse::ResourceReport do
     end
 
     Warehouse::ResourceReport.
-        total(resource_id: resource.id, warehouse_id: warehouse.id).should eq(state)
+        total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
 
 
-    waybill = build(:waybill, storekeeper: storekeeper, storekeeper_place: warehouse)
+    waybill = build(:waybill, warehouse: warehouse)
     waybill.add_item(tag: resource.tag, mu: resource.mu, amount: rand(1..10), price: 11.32)
     waybill.save!
     waybill.apply.should be_true
 
-    allocation = build(:allocation, storekeeper: storekeeper, storekeeper_place: warehouse)
+    allocation = build(:allocation, warehouse: warehouse)
     allocation.add_item(tag: resource.tag, mu: resource.mu,
               amount: (waybill.items[0].amount / 2) > 0 ? (waybill.items[0].amount / 2) : 1)
     allocation.save!
     allocation.apply.should be_true
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.id)
+    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
     Warehouse::ResourceReport.
-        count(resource_id: resource.id, warehouse_id: warehouse.id).should eq(count * 2 + 2)
+        count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2 + 2)
     state = 0
     report.count.should eq(count * 2 + 2)
     report.each do |item|
@@ -411,13 +411,13 @@ describe Warehouse::ResourceReport do
     end
 
     Warehouse::ResourceReport.
-        total(resource_id: resource.id, warehouse_id: warehouse.id).should eq(state)
+        total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
 
     allocation.reverse.should be_true
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.id)
+    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
     Warehouse::ResourceReport.
-        count(resource_id: resource.id, warehouse_id: warehouse.id).should eq(count * 2 + 1)
+        count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2 + 1)
     state = 0
     report.count.should eq(count * 2 + 1)
     report.each do |item|
@@ -473,37 +473,36 @@ describe Warehouse::ResourceReport do
     end
 
     Warehouse::ResourceReport.
-        total(resource_id: resource.id, warehouse_id: warehouse.id).should eq(state)
+        total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 
   it "should return states from waybills and allocations by date" do
     Warehouse::Waybill.delete_all
     Warehouse::Allocation.delete_all
-    create(:chart)
-    storekeeper = create(:entity)
-    warehouse = create(:place)
+    warehouse = build(:warehouse)
+    warehouse.save.should be_true
     resource = create(:asset)
     date = Date.current.change(year: 2011)
     count = 3
 
     count.times do |i|
       waybill = build(:waybill, created: date + i * 2,
-                      storekeeper: storekeeper, storekeeper_place: warehouse)
+                      warehouse: warehouse)
       waybill.add_item(tag: resource.tag, mu: resource.mu, amount: rand(1..10), price: 11.32)
       waybill.save!
       waybill.apply.should be_true
 
       allocation = build(:allocation, created: date + i * 2 + 1,
-                         storekeeper: storekeeper, storekeeper_place: warehouse)
+                         warehouse: warehouse)
       allocation.add_item(tag: resource.tag, mu: resource.mu,
                 amount: (waybill.items[0].amount / 2) > 0 ? (waybill.items[0].amount / 2) : 1)
       allocation.save!
       allocation.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.id)
+    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
     Warehouse::ResourceReport.
-        count(resource_id: resource.id, warehouse_id: warehouse.id).should eq(count * 2)
+        count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2)
     report.count.should eq(count * 2)
 
     report_c = []
@@ -526,37 +525,36 @@ describe Warehouse::ResourceReport do
     report.should eq(report_c)
 
     Warehouse::ResourceReport.
-        total(resource_id: resource.id, warehouse_id: warehouse.id).should eq(state)
+        total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 
   it "should return states from waybills and allocations by date and amount" do
     Warehouse::Waybill.delete_all
     Warehouse::Allocation.delete_all
-    create(:chart)
-    storekeeper = create(:entity)
-    warehouse = create(:place)
+    warehouse = build(:warehouse)
+    warehouse.save.should be_true
     resource = create(:asset)
     date = Date.current.change(year: 2011)
     count = 3
 
     count.times do |i|
       waybill = build(:waybill, created: date + i * 2,
-                      storekeeper: storekeeper, storekeeper_place: warehouse)
+                      warehouse: warehouse)
       waybill.add_item(tag: resource.tag, mu: resource.mu, amount: rand(1..10), price: 11.32)
       waybill.save!
       waybill.apply.should be_true
 
       allocation = build(:allocation, created: date + i * 2,
-                         storekeeper: storekeeper, storekeeper_place: warehouse)
+                         warehouse: warehouse)
       allocation.add_item(tag: resource.tag, mu: resource.mu,
                 amount: (waybill.items[0].amount / 2) > 0 ? (waybill.items[0].amount / 2) : 1)
       allocation.save!
       allocation.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.id)
+    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
     Warehouse::ResourceReport.
-        count(resource_id: resource.id, warehouse_id: warehouse.id).should eq(count * 2)
+        count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2)
     report.count.should eq(count * 2)
 
     report_c = []
@@ -579,38 +577,37 @@ describe Warehouse::ResourceReport do
     report.should eq(report_c)
 
     Warehouse::ResourceReport.
-        total(resource_id: resource.id, warehouse_id: warehouse.id).should eq(state)
+        total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 
   it "should return states with paginate" do
     Warehouse::Waybill.delete_all
     Warehouse::Allocation.delete_all
-    create(:chart)
-    storekeeper = create(:entity)
-    warehouse = create(:place)
+    warehouse = build(:warehouse)
+    warehouse.save.should be_true
     resource = create(:asset)
     date = Date.current.change(year: 2011)
     count = 10
 
     count.times do |i|
       waybill = build(:waybill, created: date + i * 2,
-                      storekeeper: storekeeper, storekeeper_place: warehouse)
+                      warehouse: warehouse)
       waybill.add_item(tag: resource.tag, mu: resource.mu, amount: rand(1..10), price: 11.32)
       waybill.save!
       waybill.apply.should be_true
 
       allocation = build(:allocation, created: date + i * 2,
-                         storekeeper: storekeeper, storekeeper_place: warehouse)
+                         warehouse: warehouse)
       allocation.add_item(tag: resource.tag, mu: resource.mu,
                 amount: (waybill.items[0].amount / 2) > 0 ? (waybill.items[0].amount / 2) : 1)
       allocation.save!
       allocation.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.id,
+    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id,
                                          page: 1, per_page: count)
     Warehouse::ResourceReport.
-        count(resource_id: resource.id, warehouse_id: warehouse.id).should eq(count * 2)
+        count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2)
     report.count.should eq(count)
 
     report_c = []
@@ -634,12 +631,12 @@ describe Warehouse::ResourceReport do
     end
 
     Warehouse::ResourceReport.
-        total(resource_id: resource.id, warehouse_id: warehouse.id).should_not eq(state)
+        total(resource_id: resource.id, warehouse_id: warehouse.place_id).should_not eq(state)
 
     report.count.should eq(report_c.count)
     report.should eq(report_c)
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.id,
+    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id,
                                          page: 2, per_page: count)
 
     report_c = []
@@ -664,6 +661,6 @@ describe Warehouse::ResourceReport do
     report.should eq(report_c)
 
     Warehouse::ResourceReport.
-        total(resource_id: resource.id, warehouse_id: warehouse.id).should eq(state)
+        total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 end
