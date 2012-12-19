@@ -28,8 +28,8 @@ module AppUtils
         name, direction = *args
         if self.attribute_names.include?(name)
           scoped.order("#{name} #{direction}")
-        elsif self.respond_to?("sort_by_#{name}".to_sym)
-          scoped.send("sort_by_#{name}".to_sym, direction)
+        elsif self.respond_to?(custom_sort_method_name(name))
+          scoped.send(custom_sort_method_name(name), direction)
         else
           scoped
         end
@@ -63,7 +63,7 @@ module AppUtils
 
     module ClassMethods
       def custom_sort(name, &block)
-        define_singleton_method "sort_by_#{name}".to_sym, &block
+        define_singleton_method custom_sort_method_name(name), &block
       end
 
       def custom_search(name, &block)
@@ -72,6 +72,10 @@ module AppUtils
 
       def custom_search_method_name(name)
         "search_by_#{name}".to_sym
+      end
+
+      def custom_sort_method_name(name)
+        "sort_by_#{name}".to_sym
       end
 
       include FilterMethods

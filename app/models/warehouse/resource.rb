@@ -39,6 +39,9 @@ module Warehouse
       custom_search name do |value|
         scoped.send(custom_search_method_name(name), value)
       end
+      custom_sort name do |value|
+        scoped.send(custom_sort_method_name(name), value)
+      end
     end
 
     private
@@ -67,6 +70,18 @@ module Warehouse
         custom_search :amount do |value|
           joins{to.states}.where{to.states.paid == nil}.
               where{cast(to.states.amount.as("character(100)")).like("%#{value}%")}
+        end
+
+        custom_sort :tag do |value|
+          joins{resource(Asset)}.group("assets.tag").order{resource.tag.send(value.downcase)}
+        end
+
+        custom_sort :mu do |value|
+          joins{resource(Asset)}.group("assets.mu").order{resource.mu.send(value.downcase)}
+        end
+
+        custom_sort :amount do |value|
+          joins{to.states}.group("states.amount").order{to.states.amount.send(value.downcase)}
         end
       end
     public
