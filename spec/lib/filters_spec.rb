@@ -108,6 +108,12 @@ describe AppUtils::ARFilters do
     end
   end
 
+  describe "#custom_sort_method_name" do
+    it "should return name of method" do
+      DammyClass.custom_sort_method_name("key").should eq(:sort_by_key)
+    end
+  end
+
   describe "#sort" do
     it "should call order" do
       DammyClass.sort("id", "desc").ordered.should eq("id desc")
@@ -138,7 +144,7 @@ describe AppUtils::ARFilters do
     end
   end
 
-  describe "#order" do
+  describe "#paginate" do
     it "should call paginate" do
       obj = DammyClass.paginate(1, 10)
       obj.limit_value.should eq(10)

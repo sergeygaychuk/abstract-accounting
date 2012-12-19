@@ -193,4 +193,49 @@ describe Warehouse::Resource do
     Warehouse::Resource.with_resource_id(resource.resource_id).
         by_warehouse(warehouse).first.should eq(resource)
   end
+
+  describe "#sort" do
+    let(:nails_pcs) { create(:asset, tag: "nails1", mu: "pcs1") }
+    let(:nails_kg) { create(:asset, tag: "nails2", mu: "kg1") }
+    let(:roof_rm) { create(:asset, tag: "roof1", mu: "rm1") }
+    let(:warehouse) do
+      warehouse = build(:warehouse)
+      warehouse.save.should be_true
+      warehouse
+    end
+
+    before :all do
+      wb = build(:waybill, storekeeper: warehouse.storekeeper,
+                 storekeeper_place: warehouse.place)
+      wb.add_item(tag: roof_rm.tag, mu: roof_rm.mu, amount: 100, price: 120.0)
+      wb.add_item(tag: nails_pcs.tag, mu: nails_pcs.mu, amount: 700, price: 1.0)
+      wb.save!
+      wb.apply
+      wb = build(:waybill, storekeeper: warehouse.storekeeper,
+                 storekeeper_place: warehouse.place)
+      wb.add_item(tag: nails_pcs.tag, mu: nails_pcs.mu, amount: 1200, price: 1.0)
+      wb.add_item(tag: nails_kg.tag, mu: nails_kg.mu, amount: 10, price: 150.0)
+      wb.add_item(tag: roof_rm.tag, mu: roof_rm.mu, amount: 50, price: 100.0)
+      wb.save!
+      wb.apply
+    end
+
+    it "should sort by resource tag" do
+      scope = Warehouse::Resource.sort(:tag, "DESC").by_warehouse(warehouse)
+      scope.count.size.should eq(3)
+      scope.all.collect{ |item| item.resource }.should eq([roof_rm, nails_kg, nails_pcs])
+    end
+
+    it "should sort by resource mu" do
+      scope = Warehouse::Resource.sort(:mu, "DESC").by_warehouse(warehouse)
+      scope.count.size.should eq(3)
+      scope.all.collect{ |item| item.resource }.should eq([roof_rm, nails_pcs, nails_kg])
+    end
+
+    it "should sort by amount" do
+      scope = Warehouse::Resource.sort(:amount, "DESC").by_warehouse(warehouse)
+      scope.count.size.should eq(3)
+      scope.all.collect{ |item| item.resource }.should eq([nails_pcs, roof_rm, nails_kg])
+    end
+  end
 end
