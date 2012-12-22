@@ -37,12 +37,12 @@ describe Warehouse::Waybill do
     wb.items[0].resource.should eq(Asset.find_all_by_tag_and_mu('nails', 'pcs').first)
     wb.items[0].amount.should eq(1200)
     wb.items[0].price.should eq(1.0)
-    wb.items[0].sum.should eq((wb.items[0].amount * wb.items[0].price).accounting_norm)
+    wb.items[0].total_price.should eq((wb.items[0].amount * wb.items[0].price).accounting_norm)
     wb.items[1].resource.should eq(Asset.find_all_by_tag_and_mu('nails', 'kg').first)
     wb.items[1].amount.should eq(10)
     wb.items[1].price.should eq(150.0)
-    wb.items[1].sum.should eq((wb.items[1].amount * wb.items[1].price).accounting_norm)
-    wb.sum.should eq(wb.items.inject(0.0) { |mem, item| mem += item.sum })
+    wb.items[1].total_price.should eq((wb.items[1].amount * wb.items[1].price).accounting_norm)
+    wb.sum.should eq(wb.items.inject(0.0) { |mem, item| mem += item.total_price })
 
     asset = create(:asset)
     wb.add_item(tag: asset.tag, mu: asset.mu, amount: 100, price: 12.0)
@@ -51,8 +51,8 @@ describe Warehouse::Waybill do
     wb.items[2].resource.should eq(asset)
     wb.items[2].amount.should eq(100)
     wb.items[2].price.should eq(12.0)
-    wb.items[2].sum.should eq((wb.items[2].amount * wb.items[2].price).accounting_norm)
-    wb.sum.should eq(wb.items.inject(0.0) { |mem, item| mem += item.sum })
+    wb.items[2].total_price.should eq((wb.items[2].amount * wb.items[2].price).accounting_norm)
+    wb.sum.should eq(wb.items.inject(0.0) { |mem, item| mem += item.total_price })
 
     wb = Warehouse::Waybill.find(wb)
     wb.items.count.should eq(3)
@@ -60,16 +60,16 @@ describe Warehouse::Waybill do
       if item.resource == Asset.find_all_by_tag_and_mu('nails', 'pcs').first
         item.amount.should eq(1200)
         item.price.should eq(1.0)
-        item.sum.should eq((item.amount * item.price).accounting_norm)
+        item.total_price.should eq((item.amount * item.price).accounting_norm)
       elsif item.resource == Asset.find_all_by_tag_and_mu('nails', 'kg').first
         item.amount.should eq(10)
         item.price.should eq(150.0)
-        item.sum.should eq((item.amount * item.price).accounting_norm)
+        item.total_price.should eq((item.amount * item.price).accounting_norm)
       elsif item.resource == asset
         item.resource.should eq(asset)
         item.amount.should eq(100)
         item.price.should eq(12.0)
-        item.sum.should eq((item.amount * item.price).accounting_norm)
+        item.total_price.should eq((item.amount * item.price).accounting_norm)
       else
         false.should be_true
       end
@@ -79,7 +79,7 @@ describe Warehouse::Waybill do
     wb.add_item(tag: 'nails', mu: 'pcs', amount: 1200, price: 1)
     wb.add_item(tag: 'nails', mu: 'kg', amount: 10, price: 150)
     wb.save
-    wb.sum.should eq(wb.items.inject(0.0) { |mem, item| mem += item.sum })
+    wb.sum.should eq(wb.items.inject(0.0) { |mem, item| mem += item.total_price })
 
     Warehouse::Waybill.total.should eq(Warehouse::Waybill.all.inject(0.0) { |mem, w| mem += w.sum })
   end
@@ -88,7 +88,7 @@ describe Warehouse::Waybill do
     wb = build(:waybill)
     wb.add_item(tag: 'roof', mu: 'm2', amount: 500, price: 10.0)
     last_deal_id = Deal.count > 0 ? Deal.last.id + 1 : 1
-    lambda { wb.save } .should change(Deal, :count).by(3)
+    lambda { wb.save.should be_true } .should change(Deal, :count).by(3)
 
     deal = Deal.find(wb.deal)
     deal.tag.should eq(I18n.t('activerecord.attributes.waybill.deal.tag',
@@ -249,7 +249,7 @@ describe Warehouse::Waybill do
     wb.add_item(tag: 'roofer', mu: 'm2', amount: 100, price: 10.0)
     wb.add_item(tag: 'roofer', mu: 'm2', amount: 120.34, price: 10.0)
     wb.add_item(tag: 'roofer', mu: 'm2', amount: 128.4, price: 10.0)
-    lambda { wb.save } .should change(Deal, :count).by(3)
+    lambda { wb.save.should be_true } .should change(Deal, :count).by(3)
 
     deal = Deal.find(wb.deal)
     deal.entity.should eq(wb.storekeeper)
@@ -271,7 +271,7 @@ describe Warehouse::Waybill do
   it 'should create rules' do
     wb = build(:waybill)
     wb.add_item(tag: 'roof', mu: 'm2', amount: 500, price: 10.0)
-    lambda { wb.save } .should change(Rule, :count).by(1)
+    lambda { wb.save.should be_true } .should change(Rule, :count).by(1)
 
     rule = wb.deal.rules.first
     rule.rate.should eq(500)

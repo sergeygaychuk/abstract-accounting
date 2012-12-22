@@ -65,26 +65,19 @@ module Warehouse
     end
 
     def add_item(attrs = {})
-      @items = Array.new unless @items
-      resource = Asset.
-          where{(lower(tag) == lower(my{attrs[:tag]})) & (lower(mu) == lower(my{attrs[:mu]}))}.
-          first
-      if self.class.warehouse_fields[:item] == :initialize && resource.nil?
-        resource = Asset.new(tag: attrs[:tag], mu: attrs[:mu])
-      end
-      attrs[:object] = self
-
-      @items << WaybillItem.new(object: self, amount: attrs[:amount],
-                                resource: resource, price: attrs[:price])
+      @items ||= []
+      @items << DealItem.new(attrs[:tag], attrs[:mu], attrs[:amount], attrs[:price])
     end
 
     def items
-      @items = Array.new unless @items
-      if @items.empty? and !self.deal.nil?
-        self.deal.rules.each do |rule|
-          @items << WaybillItem.new(object: self, resource: rule.from.take.resource,
-                                    amount: rule.rate,
-                                    price: (1.0 / rule.from.rate).accounting_norm)
+      @items ||= []
+      if @items.empty? && self.deal
+        @items = self.deal.rules.collect do |rule|
+          resource = rule.from.take.resource
+          item = DealItem.new(resource.tag, resource.mu, rule.rate,
+                              (1.0 / rule.from.rate).accounting_norm)
+          item.resource = resource
+          item
         end
       end
       @items

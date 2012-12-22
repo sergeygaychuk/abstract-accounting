@@ -52,6 +52,10 @@ en:
         waybill:
           items:
             blank: must exist
+        allocation:
+          items:
+            resource:
+              invalid: contains resource did not find on warehouse
         deal:
           has_states: already used
         fact:

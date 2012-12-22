@@ -15,12 +15,17 @@ module Warehouse
       record.errors[:items] << I18n.t('errors.messages.blank') if record.items.empty?
 
       record.items.each_with_index do |item, index|
-        deal = record.create_storekeeper_deal(item, index)
-        record.errors[:items] = 'invalid' if !deal || deal.new_record?
-        warehouse_amount = item.exp_amount
-        if (item.amount > warehouse_amount) || (item.amount <= 0)
-          record.errors[:items] = I18n.t("errors.messages.less_than_or_equal_to",
-                                         count: warehouse_amount)
+        if !item.resource || item.resource.new_record?
+          record.errors[:items] =
+              I18n.t("activerecord.errors.models.allocation.items.resource.invalid")
+        else
+          deal = record.create_storekeeper_deal(item, index)
+          record.errors[:items] = 'invalid' if !deal || deal.new_record?
+          warehouse_amount = item.state_amount(record.warehouse)
+          if (item.amount > warehouse_amount) || (item.amount <= 0)
+            record.errors[:items] = I18n.t("errors.messages.less_than_or_equal_to",
+                                           count: warehouse_amount)
+          end
         end
       end
     end
