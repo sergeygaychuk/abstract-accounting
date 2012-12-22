@@ -70,8 +70,6 @@ class TestWarehouseDeal < ActiveRecord::Base
                 receiver, 1.0 / item.price, index)
   end
 
-  attr_accessor :items
-
   attr_accessor :do_before_item_save_called
 
   def update_attributes(args = {})
@@ -79,6 +77,10 @@ class TestWarehouseDeal < ActiveRecord::Base
       self.send("#{key}=", value)
     end
     self.save
+  end
+
+  def items=(value)
+    @items = value
   end
 
   private
@@ -538,6 +540,61 @@ describe Warehouse::Deal do
       object = TestWarehouseDeal.new storekeeper: warehouse.storekeeper,
                                      storekeeper_place: warehouse.place
       object.warehouse.should eq(warehouse)
+    end
+  end
+
+  describe "#items" do
+    it "should return empty array if items don't exist" do
+      object = TestWarehouseDeal.new
+      object.deal = create(:deal)
+      object.items.should be_empty
+    end
+
+    context "rules exist" do
+      let(:object) { TestWarehouseDeal.new }
+
+      before :all do
+        object.deal = create(:deal)
+        object.deal.rules.create(from: create(:deal), to: create(:deal),
+                                 rate: 2.0, fact_side: true, change_side: true)
+        object.deal.rules.create(from: create(:deal), to: create(:deal),
+                                 rate: 3.0, fact_side: true, change_side: true)
+      end
+
+      it { object.items.should_not be_empty }
+      it { object.items.count.should eq(object.deal.rules.count) }
+      it "should generate array with DealItems by rules" do
+        object.items.each do |item|
+          item.should be_kind_of(Warehouse::DealItem)
+          rule = object.deal.rules.joins{from.take}.
+              where{from.take.resource_id == item.resource.id}.first
+          "Rule is not found".should be_empty unless rule
+          item.amount.should eq(rule.rate)
+          item.price.should eq((1.0 / rule.from.rate).accounting_norm)
+        end
+      end
+    end
+
+    describe "#add_item" do
+      it "should add items to list" do
+        object = TestWarehouseDeal.new
+        object.add_item(tag: "HAHA", mu: "HA", amount: 10.0, price: 20.98)
+        object.items.count.should eq(1)
+      end
+
+      it "should assign tag and mu" do
+        object = TestWarehouseDeal.new
+        object.add_item(tag: "HAHA", mu: "HA", amount: 10.0, price: 20.98)
+        object.items.first.tag.should eq("HAHA")
+        object.items.first.mu.should eq("HA")
+      end
+
+      it "should assign amount and price" do
+        object = TestWarehouseDeal.new
+        object.add_item(tag: "HAHA", mu: "HA", amount: 10.0, price: 20.98)
+        object.items.first.amount.should eq(10.0)
+        object.items.first.price.should eq(20.98)
+      end
     end
   end
 end

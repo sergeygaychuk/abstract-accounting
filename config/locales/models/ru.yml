@@ -55,6 +55,10 @@ ru:
         waybill:
           items:
             blank: должны быть введены
+        allocation:
+          items:
+            resource:
+              invalid: содержит ресурс отсутствующий на складе
         deal:
           has_states: уже использована
         fact:

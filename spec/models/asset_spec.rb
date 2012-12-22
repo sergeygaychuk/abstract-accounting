@@ -22,4 +22,22 @@ describe Asset do
     should have_many Asset.versions_association_name
     should belong_to(:detail).class_name(DetailedAsset)
   end
+
+  it "should filter assets by lower tag" do
+    a1 = create(:asset, tag: "Asset")
+    a2 = create(:asset, tag: "Money")
+    a3 = create(:asset, tag: "ASSET")
+
+    Asset.with_lower_tag("AsSEt").all.should =~ [a1, a3]
+    Asset.with_lower_tag("Money").all.should =~ [a2]
+  end
+
+  it "should filter assets by lower mu" do
+    a1 = create(:asset, mu: "HA")
+    a2 = create(:asset, mu: "Mo")
+    a3 = create(:asset, mu: "ha")
+
+    Asset.with_lower_mu("HA").all.should =~ [a1, a3]
+    Asset.with_lower_mu("Mo").all.should =~ [a2]
+  end
 end

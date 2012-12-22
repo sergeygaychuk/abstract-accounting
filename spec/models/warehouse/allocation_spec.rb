@@ -685,6 +685,9 @@ describe Warehouse::AllocationItemsValidator do
                             storekeeper_place: wb.storekeeper_place)
     db.add_item(tag: '', mu: 'm2', amount: 1)
     db.should be_invalid
+    db.errors.should include(:items)
+    db.errors[:items].
+        should eq([I18n.t("activerecord.errors.models.allocation.items.resource.invalid")])
     db.items.clear
     db.add_item(tag: 'roof', mu: 'm2', amount: 0)
     db.should be_invalid
