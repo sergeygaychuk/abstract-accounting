@@ -9,22 +9,22 @@
 
 require "spec_helper"
 
-Warehouse::ForemanReport.class_eval do
+Warehouse::Report::Foreman.class_eval do
   def ==(other)
-    return false unless other.instance_of?(Warehouse::ForemanReport)
+    return false unless other.instance_of?(Warehouse::Report::Foreman)
     resource == other.resource && amount == other.amount &&
         price == other.price && sum == other.sum
   end
 end
 
-describe Warehouse::ForemanReport do
+describe Warehouse::Report::Foreman do
   before :all do
     create(:chart)
   end
 
   describe "#foremen" do
     it "should return empty list by unknown warehouse_id" do
-      Warehouse::ForemanReport.foremen(create(:place).id).should be_empty
+      klass.foremen(create(:place).id).should be_empty
     end
 
     it "should return foremen" do
@@ -46,7 +46,7 @@ describe Warehouse::ForemanReport do
       end
 
       foremen = Warehouse::Allocation.all.collect { |al| al.foreman }
-      Warehouse::ForemanReport.foremen(warehouse.place_id).should =~ foremen
+      klass.foremen(warehouse.place_id).should =~ foremen
     end
 
     it "should return foremen by warehouse id" do
@@ -69,7 +69,7 @@ describe Warehouse::ForemanReport do
 
       foremen = Warehouse::Allocation.joins{deal.give}.
           where{deal.give.place_id == warehouse.place_id}.all.collect { |al| al.foreman }
-      Warehouse::ForemanReport.foremen(warehouse.place_id).should =~ foremen
+      klass.foremen(warehouse.place_id).should =~ foremen
 
       warehouse2 = build(:warehouse)
       warehouse2.save.should be_true
@@ -89,11 +89,11 @@ describe Warehouse::ForemanReport do
 
         foremen = Warehouse::Allocation.joins{deal.give}.
             where{deal.give.place_id == warehouse.place_id}.all.collect { |al| al.foreman }
-        Warehouse::ForemanReport.foremen(warehouse.place_id).should =~ foremen
+        klass.foremen(warehouse.place_id).should =~ foremen
 
         foremen = Warehouse::Allocation.joins{deal.give}.
             where{deal.give.place_id == warehouse2.place_id}.all.collect { |al| al.foreman }
-        Warehouse::ForemanReport.foremen(warehouse2.place_id).should =~ foremen
+        klass.foremen(warehouse2.place_id).should =~ foremen
       end
     end
 
@@ -157,7 +157,7 @@ describe Warehouse::ForemanReport do
       end
 
       foremen = allocations.collect { |al| al.foreman }
-      Warehouse::ForemanReport.foremen(warehouse.place_id).should =~ foremen
+      klass.foremen(warehouse.place_id).should =~ foremen
     end
 
     it "should return uniq foremen" do
@@ -196,15 +196,15 @@ describe Warehouse::ForemanReport do
         allocation.apply.should be_true
       end
 
-      Warehouse::ForemanReport.foremen(warehouse.place_id).should =~ foremen
+      klass.foremen(warehouse.place_id).should =~ foremen
     end
   end
 
   describe "#all" do
     it "should return empty list for unknown warehouse or foreman" do
-      Warehouse::ForemanReport.all(warehouse_id: create(:place).id,
+      klass.all(warehouse_id: create(:place).id,
                                  foreman_id: create(:entity).id).should be_empty
-      Warehouse::ForemanReport.count(warehouse_id: create(:place).id,
+      klass.count(warehouse_id: create(:place).id,
                                    foreman_id: create(:entity).id).should eq(0)
 
 
@@ -223,14 +223,14 @@ describe Warehouse::ForemanReport do
       allocation.save!
       allocation.apply.should be_true
 
-      Warehouse::ForemanReport.all(warehouse_id: create(:place).id,
+      klass.all(warehouse_id: create(:place).id,
                                  foreman_id: create(:entity).id).should be_empty
-      Warehouse::ForemanReport.count(warehouse_id: create(:place).id,
+      klass.count(warehouse_id: create(:place).id,
                                    foreman_id: create(:entity).id).should eq(0)
 
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: create(:entity).id).should be_empty
-      Warehouse::ForemanReport.count(warehouse_id: warehouse.place_id,
+      klass.count(warehouse_id: warehouse.place_id,
                                    foreman_id: create(:entity).id).should eq(0)
 
       warehouse = build(:warehouse)
@@ -250,9 +250,9 @@ describe Warehouse::ForemanReport do
       allocation.save!
       allocation.apply.should be_true
 
-      Warehouse::ForemanReport.all(warehouse_id: create(:place).id,
+      klass.all(warehouse_id: create(:place).id,
                                  foreman_id: foreman.id).should be_empty
-      Warehouse::ForemanReport.count(warehouse_id: create(:place).id,
+      klass.count(warehouse_id: create(:place).id,
                                  foreman_id: foreman.id).should == 0
     end
 
@@ -285,15 +285,15 @@ describe Warehouse::ForemanReport do
 
       resources = allocations.inject([]) do |mem, al|
         al.items.each do |item|
-          mem << Warehouse::ForemanReport.new(resource: item.resource, amount: item.amount,
+          mem << klass.new(resource: item.resource, amount: item.amount,
                                             price: 11.32)
         end
         mem
       end
 
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id).should =~ resources
-      Warehouse::ForemanReport.count(warehouse_id: warehouse.place_id,
+      klass.count(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id).should eq(resources.count)
 
 
@@ -312,12 +312,12 @@ describe Warehouse::ForemanReport do
         allocation.apply.should be_true
       end
 
-      resources << Warehouse::ForemanReport.new(resource: resource, amount: 75.75,
+      resources << klass.new(resource: resource, amount: 75.75,
                                               price: 11.32)
 
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id).should =~ resources
-      Warehouse::ForemanReport.count(warehouse_id: warehouse.place_id,
+      klass.count(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id).should eq(resources.count)
 
       resource = create(:asset)
@@ -334,9 +334,9 @@ describe Warehouse::ForemanReport do
         allocation.apply.should be_true
       end
 
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id).should =~ resources
-      Warehouse::ForemanReport.count(warehouse_id: warehouse.place_id,
+      klass.count(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id).should eq(resources.count)
 
       resource = create(:asset)
@@ -355,9 +355,9 @@ describe Warehouse::ForemanReport do
         allocation.reverse.should be_true
       end
 
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id).should =~ resources
-      Warehouse::ForemanReport.count(warehouse_id: warehouse.place_id,
+      klass.count(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id).should eq(resources.count)
 
       resource = create(:asset)
@@ -375,9 +375,9 @@ describe Warehouse::ForemanReport do
         allocation.cancel.should be_true
       end
 
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id).should =~ resources
-      Warehouse::ForemanReport.count(warehouse_id: warehouse.place_id,
+      klass.count(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id).should eq(resources.count)
     end
 
@@ -434,7 +434,7 @@ describe Warehouse::ForemanReport do
         allocation.apply.should be_true
       end
 
-      resources << Warehouse::ForemanReport.new(resource: resource, amount: 151.5,
+      resources << klass.new(resource: resource, amount: 151.5,
                                               price: 11.32)
 
       date += 10
@@ -451,20 +451,20 @@ describe Warehouse::ForemanReport do
         allocation.apply.should be_true
       end
 
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id,
                                  start: start, stop: stop).should =~ resources
 
-      Warehouse::ForemanReport.count(warehouse_id: warehouse.place_id,
+      klass.count(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id,
                                  start: start, stop: stop).should eq(resources.count)
 
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id,
                                  start: start.change(hour: 0),
                                  stop: stop.change(hour: 0)).should =~ resources
 
-      Warehouse::ForemanReport.count(warehouse_id: warehouse.place_id,
+      klass.count(warehouse_id: warehouse.place_id,
                                    foreman_id: foreman.id,
                                   start: start.change(hour: 0),
                                   stop: stop.change(hour: 0)).should eq(resources.count)
@@ -500,34 +500,34 @@ describe Warehouse::ForemanReport do
         end
 
         if i < 10
-          resources << Warehouse::ForemanReport.new(resource: resource, amount: 25.25,
+          resources << klass.new(resource: resource, amount: 25.25,
                                                   price: 11.32)
         else
-          resources << Warehouse::ForemanReport.new(resource: resource, amount: 75.75,
+          resources << klass.new(resource: resource, amount: 75.75,
                                                   price: 11.32)
         end
       end
 
       resources_clone = resources.clone
 
-      Warehouse::ForemanReport.count(warehouse_id: warehouse.place_id,
+      klass.count(warehouse_id: warehouse.place_id,
                                    foreman_id: foreman.id).should eq(resources.count)
 
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id,
                                  page: 1, per_page: 10).each do |item|
         resources.delete(item).should_not be_nil
       end
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id,
                                  page: "1", per_page: "10").each do |item|
         resources_clone.delete(item).should_not be_nil
       end
 
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id,
                                  page: 2, per_page: 10).should =~ resources
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id,
                                  page: "2", per_page: "10").should =~ resources
     end
@@ -556,12 +556,12 @@ describe Warehouse::ForemanReport do
         allocation.apply.should be_true
       end
 
-      resources = [Warehouse::ForemanReport.new(resource: resource, amount: 75.75,
+      resources = [klass.new(resource: resource, amount: 75.75,
                     price: (((11.32 * 10.0) + (12.32 * 100.0)) / 110.0).accounting_norm)]
 
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id).should =~ resources
-      Warehouse::ForemanReport.count(warehouse_id: warehouse.place_id,
+      klass.count(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id).should eq(resources.count)
     end
 
@@ -622,7 +622,7 @@ describe Warehouse::ForemanReport do
         allocation.apply.should be_true
       end
 
-      resources << Warehouse::ForemanReport.new(resource: resource, amount: 151.5,
+      resources << klass.new(resource: resource, amount: 151.5,
                                               price: 13.32)
 
       date += 10
@@ -639,11 +639,11 @@ describe Warehouse::ForemanReport do
         allocation.apply.should be_true
       end
 
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id,
                                  start: start, stop: stop).should =~ resources
 
-      Warehouse::ForemanReport.count(warehouse_id: warehouse.place_id,
+      klass.count(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id,
                                  start: start, stop: stop).should eq(resources.count)
     end
@@ -668,15 +668,15 @@ describe Warehouse::ForemanReport do
         allocation.apply.should be_true
 
         if i % 2 == 0
-          resources << Warehouse::ForemanReport.new(resource: resource, amount: 25.25,
+          resources << klass.new(resource: resource, amount: 25.25,
                                                   price: 11.32)
         end
       end
 
-      Warehouse::ForemanReport.count(warehouse_id: warehouse.place_id,
+      klass.count(warehouse_id: warehouse.place_id,
                                    foreman_id: foreman.id).should eq(20)
 
-      Warehouse::ForemanReport.all(warehouse_id: warehouse.place_id,
+      klass.all(warehouse_id: warehouse.place_id,
                                  foreman_id: foreman.id,
                                  resource_ids: resources.collect{ |item| item.resource.id }.join(",")
       ).should =~ resources

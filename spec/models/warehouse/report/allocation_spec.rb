@@ -9,7 +9,7 @@
 
 require 'spec_helper'
 
-describe Warehouse::AllocationReport do
+describe Warehouse::Report::Allocation do
   before(:all) do
     create(:chart)
   end
@@ -47,7 +47,7 @@ describe Warehouse::AllocationReport do
     al2.add_item(tag: 'nails', mu: 'kg', amount: 40)
     al2.save!
 
-    als = Warehouse::AllocationReport.with_resources.select_all.order{deal.rules.rate}
+    als = klass.with_resources.select_all.order{deal.rules.rate}
 
     als[0].created.should eq(al1.created)
     als[0].storekeeper.tag.should eq(al1.storekeeper.tag)
@@ -134,56 +134,60 @@ describe Warehouse::AllocationReport do
     al3.save!
     al3.apply
 
-    als = Warehouse::AllocationReport.sort(field: 'created', type: 'asc').all
-    als_test = Warehouse::AllocationReport.order('created').all
+    als = klass.sort(field: 'created', type: 'asc').all
+    als_test = klass.order('created').all
     als.should eq(als_test)
-    als = Warehouse::AllocationReport.sort(field: 'created', type: 'desc').all
-    als_test = Warehouse::AllocationReport.order('created DESC').all
-    als.should eq(als_test)
-
-    als = Warehouse::AllocationReport.sort(field: 'storekeeper', type: 'asc').all
-    als_test = Warehouse::AllocationReport.joins{deal.entity(Entity)}.order('entities.tag').all
-    als.should eq(als_test)
-    als = Warehouse::AllocationReport.sort(field: 'storekeeper', type: 'desc').all
-    als_test = Warehouse::AllocationReport.joins{deal.entity(Entity)}.order('entities.tag DESC').all
+    als = klass.sort(field: 'created', type: 'desc').all
+    als_test = klass.order('created DESC').all
     als.should eq(als_test)
 
-    als = Warehouse::AllocationReport.sort(field: 'storekeeper_place', type: 'asc').all
-    als_test = Warehouse::AllocationReport.joins{deal.give.place}.order('places.tag').all
+    als = klass.sort(field: 'storekeeper', type: 'asc').all
+    als_test = klass.joins{deal.entity(Entity)}.order('entities.tag').all
     als.should eq(als_test)
-    als = Warehouse::AllocationReport.sort(field: 'storekeeper_place', type: 'desc').all
-    als_test = Warehouse::AllocationReport.joins{deal.give.place}.order('places.tag DESC').all
+    als = klass.sort(field: 'storekeeper', type: 'desc').all
+    als_test = klass.joins{deal.entity(Entity)}.order('entities.tag DESC').all
     als.should eq(als_test)
 
-    als = Warehouse::AllocationReport.select_all.with_resources.
+    als = klass.sort(field: 'storekeeper_place', type: 'asc').all
+    als_test = klass.joins{deal.give.place}.order('places.tag').all
+    als.should eq(als_test)
+    als = klass.sort(field: 'storekeeper_place', type: 'desc').all
+    als_test = klass.joins{deal.give.place}.order('places.tag DESC').all
+    als.should eq(als_test)
+
+    als = klass.select_all.with_resources.
         sort(field: 'foreman', type: 'asc').all
-    als_test = Warehouse::AllocationReport.joins{deal.rules.to.entity(Entity)}.
+    als_test = klass.joins{deal.rules.to.entity(Entity)}.
         order('entities.tag ASC').all
     als.should eq(als_test)
-    als = Warehouse::AllocationReport.sort(field: 'foreman', type: 'desc').all
-    als_test = Warehouse::AllocationReport.joins{deal.rules.to.entity(Entity)}.
+    als = klass.sort(field: 'foreman', type: 'desc').all
+    als_test = klass.joins{deal.rules.to.entity(Entity)}.
         order('entities.tag DESC').order("entities.id ASC").all
     als.should eq(als_test)
 
-    als = Warehouse::AllocationReport.select_all.with_resources.sort(field: 'resource_tag', type: 'asc').all
-    als_test = Warehouse::AllocationReport.select_all.with_resources.order('assets.tag').all
+    als = klass.select_all.with_resources.sort(field: 'resource_tag', type: 'asc').
+            order("id ASC").all
+    als_test = klass.select_all.with_resources.order('assets.tag ASC, id ASC').all
     als.should eq(als_test)
-    als = Warehouse::AllocationReport.select_all.with_resources.sort(field: 'resource_tag', type: 'desc').all
-    als_test = Warehouse::AllocationReport.select_all.with_resources.order('assets.tag DESC').all
-    als.should eq(als_test)
-
-    als = Warehouse::AllocationReport.select_all.with_resources.sort(field: 'resource_mu', type: 'asc').all
-    als_test = Warehouse::AllocationReport.select_all.with_resources.order('assets.mu').all
-    als.should eq(als_test)
-    als = Warehouse::AllocationReport.select_all.with_resources.sort(field: 'resource_mu', type: 'desc').all
-    als_test = Warehouse::AllocationReport.select_all.with_resources.order('assets.mu DESC').all
+    als = klass.select_all.with_resources.sort(field: 'resource_tag', type: 'desc').
+            order("id ASC").all
+    als_test = klass.select_all.with_resources.order('assets.tag DESC, id ASC').all
     als.should eq(als_test)
 
-    als = Warehouse::AllocationReport.select_all.with_resources.sort(field: 'resource_amount', type: 'asc').all
-    als_test = Warehouse::AllocationReport.select_all.with_resources.order('rules.rate').all
+    als = klass.select_all.with_resources.sort(field: 'resource_mu', type: 'asc').
+        order("id ASC").all
+    als_test = klass.select_all.with_resources.order('assets.mu, id ASC').all
     als.should eq(als_test)
-    als = Warehouse::AllocationReport.select_all.with_resources.sort(field: 'resource_amount', type: 'desc').all
-    als_test = Warehouse::AllocationReport.select_all.with_resources.order('rules.rate DESC').all
+    als = klass.select_all.with_resources.sort(field: 'resource_mu', type: 'desc').
+        order("id ASC").all
+    als_test = klass.select_all.with_resources.order('assets.mu DESC, id ASC').all
+    als.should eq(als_test)
+
+    als = klass.select_all.with_resources.sort(field: 'resource_amount', type: 'asc').all
+    als_test = klass.select_all.with_resources.order('rules.rate').all
+    als.should eq(als_test)
+    als = klass.select_all.with_resources.sort(field: 'resource_amount', type: 'desc').all
+    als_test = klass.select_all.with_resources.order('rules.rate DESC').all
     als.should eq(als_test)
   end
 
@@ -244,33 +248,33 @@ describe Warehouse::AllocationReport do
     al3.save!
     al3.apply
 
-    als = Warehouse::AllocationReport.search(created: '15').all
-    als_test = Warehouse::AllocationReport.where{to_char(created, 'YYYY-MM-DD').like("%15%")}.all
+    als = klass.search(created: '15').all
+    als_test = klass.where{to_char(created, 'YYYY-MM-DD').like("%15%")}.all
     als =~ als_test
 
-    als = Warehouse::AllocationReport.select_all.with_resources.search('foreman' => 'o').all
-    als_test = Warehouse::AllocationReport.joins{deal.rules.to.entity(Entity)}.
+    als = klass.select_all.with_resources.search('foreman' => 'o').all
+    als_test = klass.joins{deal.rules.to.entity(Entity)}.
         where("entities.tag LIKE '%o%'").all
     als =~ als_test
 
-    als = Warehouse::AllocationReport.search('storekeeper' => 'a').all
-    als_test = Warehouse::AllocationReport.joins{deal.entity(Entity)}.
+    als = klass.search('storekeeper' => 'a').all
+    als_test = klass.joins{deal.entity(Entity)}.
         where{lower(deal.entity.tag).like(lower("%a%"))}.all
     als =~ als_test
 
-    als = Warehouse::AllocationReport.search('storekeeper_place' => 'e').all
-    als_test = Warehouse::AllocationReport.joins{deal.give.place}.where("places.tag LIKE '%e%'").all
+    als = klass.search('storekeeper_place' => 'e').all
+    als_test = klass.joins{deal.give.place}.where("places.tag LIKE '%e%'").all
     als =~ als_test
 
-    als = Warehouse::AllocationReport.select_all.with_resources.
+    als = klass.select_all.with_resources.
         search(states: [Warehouse::Allocation::INWORK]).all
-    als_test = Warehouse::AllocationReport.select_all.with_resources.joins{deal.deal_state}.
+    als_test = klass.select_all.with_resources.joins{deal.deal_state}.
         joins{deal.to_facts.outer}.
         where{deal.deal_state.state == Warehouse::Allocation::INWORK}.all
     als =~ als_test
 
-    als = Warehouse::AllocationReport.select_all.with_resources.search('resource_tag' => 'r').all
-    als_test = Warehouse::AllocationReport.select_all.with_resources.where("assets.tag LIKE '%r%'").all
+    als = klass.select_all.with_resources.search('resource_tag' => 'r').all
+    als_test = klass.select_all.with_resources.where("assets.tag LIKE '%r%'").all
     als =~ als_test
   end
 end

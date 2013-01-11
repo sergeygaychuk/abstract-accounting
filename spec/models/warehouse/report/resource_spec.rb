@@ -9,26 +9,26 @@
 
 require "spec_helper"
 
-Warehouse::ResourceReport.class_eval do
+Warehouse::Report::Resource.class_eval do
   def ==(other)
-    return false unless other.instance_of?(Warehouse::ResourceReport)
+    return false unless other.instance_of?(Warehouse::Report::Resource)
     date.to_date == other.date.to_date && entity == other.entity && amount == other.amount &&
         state == other.state && side == other.side && document_id == other.document_id &&
         item_id == other.item_id
   end
 end
 
-describe Warehouse::ResourceReport do
+describe Warehouse::Report::Resource do
   before :all do
     create(:chart)
   end
 
   it "should return empty state for unknown resource" do
-    Warehouse::ResourceReport.all(resource_id: create(:asset).id,
+    klass.all(resource_id: create(:asset).id,
                                 warehouse_id: create(:place).id).should be_empty
-    Warehouse::ResourceReport.count(resource_id: create(:asset).id,
+    klass.count(resource_id: create(:asset).id,
                                    warehouse_id: create(:place).id).should eq(0)
-    Warehouse::ResourceReport.total(resource_id: create(:asset).id,
+    klass.total(resource_id: create(:asset).id,
                                    warehouse_id: create(:place).id).should eq(0.0)
   end
 
@@ -45,13 +45,13 @@ describe Warehouse::ResourceReport do
       waybill.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
-    Warehouse::ResourceReport.
+    report = klass.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
+    klass.
         count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count)
     state = 0.0
     report.count.should eq(count)
     report.each do |item|
-      item.should be_instance_of(Warehouse::ResourceReport)
+      item.should be_instance_of(klass)
       item.date.should_not be_nil
       item.entity.should_not be_nil
       item.amount.should_not be_nil
@@ -73,7 +73,7 @@ describe Warehouse::ResourceReport do
       item.item_id.should eq(wb.id)
     end
 
-    Warehouse::ResourceReport.
+    klass.
         total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 
@@ -90,13 +90,13 @@ describe Warehouse::ResourceReport do
       waybill.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
-    Warehouse::ResourceReport.
+    report = klass.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
+    klass.
         count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count)
     state = 0.0
     report.count.should eq(count)
     report.each do |item|
-      item.should be_instance_of(Warehouse::ResourceReport)
+      item.should be_instance_of(klass)
       item.date.should_not be_nil
       item.entity.should_not be_nil
       item.amount.should_not be_nil
@@ -118,7 +118,7 @@ describe Warehouse::ResourceReport do
       item.item_id.should eq(wb.id)
     end
 
-    Warehouse::ResourceReport.
+    klass.
         total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
 
     waybill = build(:waybill, warehouse: warehouse)
@@ -126,13 +126,13 @@ describe Warehouse::ResourceReport do
     waybill.save!
     waybill.apply.should be_true
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
-    Warehouse::ResourceReport.
+    report = klass.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
+    klass.
         count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count + 1)
     state = 0.0
     report.count.should eq(count + 1)
     report.each do |item|
-      item.should be_instance_of(Warehouse::ResourceReport)
+      item.should be_instance_of(klass)
       item.date.should_not be_nil
       item.entity.should_not be_nil
       item.amount.should_not be_nil
@@ -152,18 +152,18 @@ describe Warehouse::ResourceReport do
       item.item_id.should eq(wb.id)
     end
 
-    Warehouse::ResourceReport.
+    klass.
         total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
 
     waybill.reverse.should be_true
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
-    Warehouse::ResourceReport.
+    report = klass.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
+    klass.
         count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count)
     state = 0.0
     report.count.should eq(count)
     report.each do |item|
-      item.should be_instance_of(Warehouse::ResourceReport)
+      item.should be_instance_of(klass)
       item.date.should_not be_nil
       item.entity.should_not be_nil
       item.amount.should_not be_nil
@@ -184,7 +184,7 @@ describe Warehouse::ResourceReport do
       item.item_id.should eq(wb.id)
     end
 
-    Warehouse::ResourceReport.
+    klass.
         total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 
@@ -207,13 +207,13 @@ describe Warehouse::ResourceReport do
       allocation.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
-    Warehouse::ResourceReport.
+    report = klass.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
+    klass.
         count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2)
     state = 0
     report.count.should eq(count * 2)
     report.each do |item|
-      item.should be_instance_of(Warehouse::ResourceReport)
+      item.should be_instance_of(klass)
       item.date.should_not be_nil
       item.entity.should_not be_nil
       item.amount.should_not be_nil
@@ -228,7 +228,7 @@ describe Warehouse::ResourceReport do
       document_id = nil
       item_id = nil
 
-      if item.side == Warehouse::ResourceReport::WAYBILL_SIDE
+      if item.side == klass::WAYBILL_SIDE
         distributor = item.entity
         wb = Warehouse::Waybill.joins{deal.rules.from}.
             where{deal.rules.from.entity_id == my{distributor.id}}.uniq.first
@@ -240,7 +240,7 @@ describe Warehouse::ResourceReport do
         entity = wb.distributor
         document_id = wb.document_id
         item_id = wb.id
-      elsif item.side == Warehouse::ResourceReport::ALLOCATION_SIDE
+      elsif item.side == klass::ALLOCATION_SIDE
         foreman = item.entity
         al = Warehouse::Allocation.joins{deal.rules.to}.
             where{deal.rules.to.entity_id == my{foreman.id}}.uniq.first
@@ -262,7 +262,7 @@ describe Warehouse::ResourceReport do
       item.item_id.should eq(item_id)
     end
 
-    Warehouse::ResourceReport.
+    klass.
         total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 
@@ -285,13 +285,13 @@ describe Warehouse::ResourceReport do
       allocation.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
-    Warehouse::ResourceReport.
+    report = klass.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
+    klass.
         count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2)
     state = 0
     report.count.should eq(count * 2)
     report.each do |item|
-      item.should be_instance_of(Warehouse::ResourceReport)
+      item.should be_instance_of(klass)
       item.date.should_not be_nil
       item.entity.should_not be_nil
       item.amount.should_not be_nil
@@ -306,7 +306,7 @@ describe Warehouse::ResourceReport do
       document_id = nil
       item_id = nil
 
-      if item.side == Warehouse::ResourceReport::WAYBILL_SIDE
+      if item.side == klass::WAYBILL_SIDE
         distributor = item.entity
         wb = Warehouse::Waybill.joins{deal.rules.from}.
             where{deal.rules.from.entity_id == my{distributor.id}}.uniq.first
@@ -318,7 +318,7 @@ describe Warehouse::ResourceReport do
         entity = wb.distributor
         document_id = wb.document_id
         item_id = wb.id
-      elsif item.side == Warehouse::ResourceReport::ALLOCATION_SIDE
+      elsif item.side == klass::ALLOCATION_SIDE
         foreman = item.entity
         al = Warehouse::Allocation.joins{deal.rules.to}.
             where{deal.rules.to.entity_id == my{foreman.id}}.uniq.first
@@ -340,7 +340,7 @@ describe Warehouse::ResourceReport do
       item.item_id.should eq(item_id)
     end
 
-    Warehouse::ResourceReport.
+    klass.
         total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
 
 
@@ -355,13 +355,13 @@ describe Warehouse::ResourceReport do
     allocation.save!
     allocation.apply.should be_true
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
-    Warehouse::ResourceReport.
+    report = klass.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
+    klass.
         count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2 + 2)
     state = 0
     report.count.should eq(count * 2 + 2)
     report.each do |item|
-      item.should be_instance_of(Warehouse::ResourceReport)
+      item.should be_instance_of(klass)
       item.date.should_not be_nil
       item.entity.should_not be_nil
       item.amount.should_not be_nil
@@ -376,7 +376,7 @@ describe Warehouse::ResourceReport do
       document_id = nil
       item_id = nil
 
-      if item.side == Warehouse::ResourceReport::WAYBILL_SIDE
+      if item.side == klass::WAYBILL_SIDE
         distributor = item.entity
         wb = Warehouse::Waybill.joins{deal.rules.from}.
             where{deal.rules.from.entity_id == my{distributor.id}}.uniq.first
@@ -388,7 +388,7 @@ describe Warehouse::ResourceReport do
         entity = wb.distributor
         document_id = wb.document_id
         item_id = wb.id
-      elsif item.side == Warehouse::ResourceReport::ALLOCATION_SIDE
+      elsif item.side == klass::ALLOCATION_SIDE
         foreman = item.entity
         al = Warehouse::Allocation.joins{deal.rules.to}.
             where{deal.rules.to.entity_id == my{foreman.id}}.uniq.first
@@ -410,18 +410,18 @@ describe Warehouse::ResourceReport do
       item.item_id.should eq(item_id)
     end
 
-    Warehouse::ResourceReport.
+    klass.
         total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
 
     allocation.reverse.should be_true
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
-    Warehouse::ResourceReport.
+    report = klass.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
+    klass.
         count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2 + 1)
     state = 0
     report.count.should eq(count * 2 + 1)
     report.each do |item|
-      item.should be_instance_of(Warehouse::ResourceReport)
+      item.should be_instance_of(klass)
       item.date.should_not be_nil
       item.entity.should_not be_nil
       item.amount.should_not be_nil
@@ -430,7 +430,7 @@ describe Warehouse::ResourceReport do
       item.document_id.should_not be_nil
       item.item_id.should_not be_nil
       item.item_id.
-        should_not eq(allocation.id) if item.side == Warehouse::ResourceReport::ALLOCATION_SIDE
+        should_not eq(allocation.id) if item.side == klass::ALLOCATION_SIDE
 
       date = nil
       amount = nil
@@ -438,7 +438,7 @@ describe Warehouse::ResourceReport do
       document_id = nil
       item_id = nil
 
-      if item.side == Warehouse::ResourceReport::WAYBILL_SIDE
+      if item.side == klass::WAYBILL_SIDE
         distributor = item.entity
         wb = Warehouse::Waybill.joins{deal.rules.from}.
             where{deal.rules.from.entity_id == my{distributor.id}}.uniq.first
@@ -450,7 +450,7 @@ describe Warehouse::ResourceReport do
         entity = wb.distributor
         document_id = wb.document_id
         item_id = wb.id
-      elsif item.side == Warehouse::ResourceReport::ALLOCATION_SIDE
+      elsif item.side == klass::ALLOCATION_SIDE
         foreman = item.entity
         al = Warehouse::Allocation.joins{deal.rules.to}.
             where{deal.rules.to.entity_id == my{foreman.id}}.uniq.first
@@ -472,7 +472,7 @@ describe Warehouse::ResourceReport do
       item.item_id.should eq(item_id)
     end
 
-    Warehouse::ResourceReport.
+    klass.
         total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 
@@ -500,8 +500,8 @@ describe Warehouse::ResourceReport do
       allocation.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
-    Warehouse::ResourceReport.
+    report = klass.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
+    klass.
         count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2)
     report.count.should eq(count * 2)
 
@@ -510,21 +510,21 @@ describe Warehouse::ResourceReport do
     Warehouse::Waybill.all.each_with_index do |w, ind|
       amount = w.items[0].amount
       state += amount
-      report_c << Warehouse::ResourceReport.new(date: w.created, entity: w.distributor,
-        amount: amount, state: state, side: Warehouse::ResourceReport::WAYBILL_SIDE,
+      report_c << klass.new(date: w.created, entity: w.distributor,
+        amount: amount, state: state, side: klass::WAYBILL_SIDE,
         document_id: w.document_id, item_id: w.id)
 
       al = Warehouse::Allocation.all[ind]
       amount = al.items[0].amount
       state -= amount
-      report_c << Warehouse::ResourceReport.new(date: al.created, entity: al.foreman,
-        amount: amount, state: state, side: Warehouse::ResourceReport::ALLOCATION_SIDE,
+      report_c << klass.new(date: al.created, entity: al.foreman,
+        amount: amount, state: state, side: klass::ALLOCATION_SIDE,
         document_id: al.document_id, item_id: al.id)
     end
 
     report.should eq(report_c)
 
-    Warehouse::ResourceReport.
+    klass.
         total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 
@@ -552,8 +552,8 @@ describe Warehouse::ResourceReport do
       allocation.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
-    Warehouse::ResourceReport.
+    report = klass.all(resource_id: resource.id, warehouse_id: warehouse.place_id)
+    klass.
         count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2)
     report.count.should eq(count * 2)
 
@@ -562,21 +562,21 @@ describe Warehouse::ResourceReport do
     Warehouse::Waybill.all.each_with_index do |w, ind|
       amount = w.items[0].amount
       state += amount
-      report_c << Warehouse::ResourceReport.new(date: w.created, entity: w.distributor,
-        amount: amount, state: state, side: Warehouse::ResourceReport::WAYBILL_SIDE,
+      report_c << klass.new(date: w.created, entity: w.distributor,
+        amount: amount, state: state, side: klass::WAYBILL_SIDE,
         document_id: w.document_id, item_id: w.id)
 
       al = Warehouse::Allocation.all[ind]
       amount = al.items[0].amount
       state -= amount
-      report_c << Warehouse::ResourceReport.new(date: al.created, entity: al.foreman,
-        amount: amount, state: state, side: Warehouse::ResourceReport::ALLOCATION_SIDE,
+      report_c << klass.new(date: al.created, entity: al.foreman,
+        amount: amount, state: state, side: klass::ALLOCATION_SIDE,
         document_id: al.document_id, item_id: al.id)
     end
 
     report.should eq(report_c)
 
-    Warehouse::ResourceReport.
+    klass.
         total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 
@@ -604,9 +604,9 @@ describe Warehouse::ResourceReport do
       allocation.apply.should be_true
     end
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id,
+    report = klass.all(resource_id: resource.id, warehouse_id: warehouse.place_id,
                                          page: 1, per_page: count)
-    Warehouse::ResourceReport.
+    klass.
         count(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(count * 2)
     report.count.should eq(count)
 
@@ -618,25 +618,25 @@ describe Warehouse::ResourceReport do
 
       amount = w.items[0].amount
       state += amount
-      report_c << Warehouse::ResourceReport.new(date: w.created, entity: w.distributor,
-        amount: amount, state: state, side: Warehouse::ResourceReport::WAYBILL_SIDE,
+      report_c << klass.new(date: w.created, entity: w.distributor,
+        amount: amount, state: state, side: klass::WAYBILL_SIDE,
         document_id: w.document_id, item_id: w.id)
 
       al = Warehouse::Allocation.all[ind]
       amount = al.items[0].amount
       state -= amount
-      report_c << Warehouse::ResourceReport.new(date: al.created, entity: al.foreman,
-        amount: amount, state: state, side: Warehouse::ResourceReport::ALLOCATION_SIDE,
+      report_c << klass.new(date: al.created, entity: al.foreman,
+        amount: amount, state: state, side: klass::ALLOCATION_SIDE,
         document_id: al.document_id, item_id: al.id)
     end
 
-    Warehouse::ResourceReport.
+    klass.
         total(resource_id: resource.id, warehouse_id: warehouse.place_id).should_not eq(state)
 
     report.count.should eq(report_c.count)
     report.should eq(report_c)
 
-    report = Warehouse::ResourceReport.all(resource_id: resource.id, warehouse_id: warehouse.place_id,
+    report = klass.all(resource_id: resource.id, warehouse_id: warehouse.place_id,
                                          page: 2, per_page: count)
 
     report_c = []
@@ -645,22 +645,21 @@ describe Warehouse::ResourceReport do
 
       amount = w.items[0].amount
       state += amount
-      report_c << Warehouse::ResourceReport.new(date: w.created, entity: w.distributor,
-        amount: amount, state: state, side: Warehouse::ResourceReport::WAYBILL_SIDE,
+      report_c << klass.new(date: w.created, entity: w.distributor,
+        amount: amount, state: state, side: klass::WAYBILL_SIDE,
         document_id: w.document_id, item_id: w.id)
 
       al = Warehouse::Allocation.offset(count / 2).all[ind]
       amount = al.items[0].amount
       state -= amount
-      report_c << Warehouse::ResourceReport.new(date: al.created, entity: al.foreman,
-        amount: amount, state: state, side: Warehouse::ResourceReport::ALLOCATION_SIDE,
+      report_c << klass.new(date: al.created, entity: al.foreman,
+        amount: amount, state: state, side: klass::ALLOCATION_SIDE,
         document_id: al.document_id, item_id: al.id)
     end
 
     report.count.should eq(report_c.count)
     report.should eq(report_c)
 
-    Warehouse::ResourceReport.
-        total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
+    klass.total(resource_id: resource.id, warehouse_id: warehouse.place_id).should eq(state)
   end
 end
