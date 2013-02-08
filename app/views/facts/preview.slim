@@ -1,0 +1,121 @@
+form data-bind="validate: { success: save }"
+  .actions
+    = render :partial => "home/buttons", :locals => { :editable => false }
+
+  span#page-title
+    /! ko if: readonly
+    = t('views.facts.page.title.show')
+    /! /ko
+    /! ko ifnot: readonly
+    = t('views.facts.page.title.new')
+    /! /ko
+
+  = render 'home/errors'
+
+  fieldset
+    div
+      div
+        span.form-cell-label
+          label for="fact_day" = t('views.facts.day')
+            | :
+        span
+          input [type="text" id="fact_day" name="#{t('views.facts.day')}" rule="required"
+                 data-bind="datepicker: { value: object.fact.day, maxDate: '+0' },
+                 disable: readonly"]
+      div
+        span.form-cell-label
+          label for="fact_from_deal" = t('views.facts.from')
+            | :
+        span
+          input [type="text" id="fact_from_deal"
+                 name="#{t('views.facts.from')}" rule="required"
+                 data-bind="dialog: { autoOpen: false,
+                                      modal: true,
+                                      minWidth: 480,
+                                      minHeight: 300,
+                                      bind: { id: object.fact.from_deal_id, tag: object.from.tag }
+                                    },
+                            dialogId: 'deals_selector',
+                            value: object.from.tag,
+                            disable: readonly"]
+
+          div.additional-date data-bind="with: from_state"
+            span.form-cell-label
+              label for="from_deal_debit" = t('views.facts.debit')
+                | :
+            span
+              input [type="text" id="from_deal_debit"
+                     data-bind="value: debit" disabled="disabled"]
+            span.form-cell-label
+              label for="from_deal_credit" = t('views.facts.credit')
+                | :
+            span
+              input [type="text" id="from_deal_credit"
+                     data-bind="value: credit" disabled="disabled"]
+      div
+        span.form-cell-label
+          label for="fact_to_deal" = t('views.facts.to')
+            | :
+        span
+          input [type="text" id="fact_to_deal"
+                 name="#{t('views.facts.to')}" rule="required"
+                 data-bind="dialog: { autoOpen: false,
+                                      modal: true,
+                                      minWidth: 480,
+                                      minHeight: 300,
+                                      bind: { id: object.fact.to_deal_id, tag: object.to.tag }
+                                    },
+                            dialogId: 'deals_selector',
+                            value: object.to.tag,
+                            disable: readonly"]
+
+          div.additional-date data-bind="with: to_state"
+            span.form-cell-label
+              label for="to_deal_debit" = t('views.facts.debit')
+                | :
+            span
+              input [type="text" id="to_deal_debit"
+                     data-bind="value: debit" disabled="disabled"]
+
+            span.form-cell-label
+              label for="to_deal_credit" = t('views.facts.credit')
+                | :
+            span
+              input [type="text" id="to_deal_credit"
+                     data-bind="value: credit" disabled="disabled"]
+      div
+        span.form-cell-label
+          label for="fact_amount"
+            = t('views.facts.amount')
+              | :
+        span
+          input [type="text" id="fact_amount"
+                 name="#{t('views.facts.amount')}" rule="required"
+                 data-bind="value: object.fact.amount, disable: readonly"]
+
+  /! ko if: readonly
+  input [type='button' value="#{t('views.facts.create_txn')}"
+         data-bind="click: createTxn, disable: has_txn"]
+  /! /ko
+
+  fieldset data-bind="with: object.txn"
+    legend = t('views.facts.fact_txn')
+    div
+      div
+        span.form-cell-label
+          label for="txn_value" = t('views.facts.txn.value')
+            | :
+        span
+          input type="text" id="txn_value" disabled="disabled" data-bind="value: value"
+    /! ko if: status() == 1
+    div
+      div
+        span.form-cell-label
+          label for="txn_earnings" = t('views.facts.txn.earnings')
+            | :
+        span
+          input type="text" id="txn_earnings" disabled="disabled" data-bind="value: earnings"
+    /! /ko
+/! ko ifnot: readonly
+= render :partial => "home/select_dialog", :locals => { :dialog_id => 'deals_selector', :dialog_model => 'dialog_deals', :data_path => 'deals/deals' }
+/! /ko

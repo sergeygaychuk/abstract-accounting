@@ -1,0 +1,269 @@
+/*
+ Copyright (C) 2011 Sergey Yanovich <ynvich@gmail.com>
+
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License as
+ published by the Free Software Foundation; either version 3 of the
+ License, or (at your option) any later version.
+
+ Please see ./COPYING for details*/
+/*
+*= require_self
+*= require jquery.ui.datepicker
+*= require jquery.ui.core
+*= require jquery.ui.theme
+*= require jquery-ui
+*= require sticky
+*/
+
+$table_border: 1px solid #d8d8d8;
+$table_head_background: #ededed;
+$table_head_title: #878787;
+$menu_selected: #e5e5e5;
+
+body, html{
+  margin: 0;
+  padding: 0;
+  color: black;
+  background: white;
+  font-size: 14px;
+}
+
+#header{
+  padding: 12px 4px;
+
+  #current_user{
+    float: left;
+  }
+  #options{
+    float: right;
+  }
+  #filter{
+    float: left;
+
+    .filter-bar {
+      display: inline-block;
+      text-decoration: none;
+      border: 1px solid #cccccc;
+      color: #000000;
+      white-space: nowrap;
+      border-radius: 3px;
+      -webkit-border-radius: 3px;
+      -moz-border-radius: 3px;
+      height: 23px;
+      width: 300px;
+
+      input[type=text] {
+        margin: 0;
+        height: 21px;
+        width: 280px;
+        border: none;
+      }
+
+      #show-filter {
+        display: inline-block;
+        height: 100%;
+        width: 16px;
+        cursor: pointer;
+      }
+    }
+  }
+}
+
+#header:after {
+  display: block;
+  content: '';
+  clear: both;
+  width: 0;
+  height: 0;
+}
+
+#main{
+
+  #sidebar{
+    left: 0;
+    text-align: center;
+    position: fixed;
+    width: 152px;
+    padding: 4px;
+
+    #create_button{
+
+    }
+    #main_menu{
+      ul {
+        list-style: none;
+        padding: 0;
+        margin: 14px 0 0;
+        clear: left;
+
+        li {
+          a {
+            color: black;
+            text-decoration: none;
+            display: block;
+            padding: 2px;
+          }
+          a:hover{
+            background: $menu_selected;
+            font-weight: bold;
+          }
+        }
+
+        .sidebar-selected {
+          font-weight: bold;
+          background: $menu_selected;
+          border-left: 2px solid #a5a5a5;
+          margin-left: -2px;
+        }
+      }
+    }
+  }
+  #page{
+    left: 8px;
+    right: 0;
+
+    #work_field{
+      margin-left: 160px;
+      border-left: $table_border;
+      min-height: 189px;
+
+      .actions {
+        padding: 3px;
+        position: absolute;
+        top: 55px;
+
+        input {
+          height: 25px;
+          min-width: 60px;
+          margin: 0;
+        }
+      }
+    }
+  }
+}
+
+#footer{
+
+}
+
+.operations{
+  background: #f5f5f5;
+  border: $table_border;
+  margin-left: 160px;
+  padding: 7px;
+  height: 25px;
+  clear: left;
+}
+
+.paginate{
+
+}
+
+#container_notification {
+  display: none;
+  border-color: red;
+  margin: -5px 0 8px 2px;
+  color: red;
+
+  legend { color: red; }
+
+  ul {
+    font-size: 13px;
+    margin: 0;
+    padding-left: 20px;
+    list-style: circle;
+
+    label {
+      cursor: pointer;
+    }
+  }
+}
+
+form{
+  fieldset {
+    border: $table_border;
+    width: 700px;
+    margin-bottom: 2px;
+  }
+}
+
+table{
+  margin: 0;
+
+  th {
+    border-right: $table_border;
+    border-bottom: $table_border;
+    background: $table_head_background;
+    padding-top: 4px;
+    color: $table_head_title;
+
+    span.ui-icon {
+      display: inline-block;
+      margin-left: 2px;
+      vertical-align: text-bottom;
+    }
+  }
+
+  tr {
+    cursor: pointer;
+
+    td {
+      border-bottom: $table_border;
+      border-right: $table_border;
+      height: 20px;
+      padding: 4px 5px 0 5px;
+    }
+
+    td.cell-checkbox {
+      width: 15px;
+
+      input {
+        margin: 0;
+      }
+    }
+
+    td.cell-star {
+      width: 15px;
+
+      p {
+        margin: 0;
+        float: left;
+        position: relative;
+        width: 16px;
+        height: 16px;
+      }
+
+      .checkbox-old {
+        float: left;
+        display: none;
+      }
+
+      .star {
+        position: absolute;
+        cursor: pointer;
+        padding-top: 16px;
+        padding-left: 16px;
+        background: url(star-off.png) no-repeat;
+        margin-top: -3px;
+      }
+
+      .checkbox-old:checked + .star {
+        background: url(star.png) no-repeat;
+      }
+    }
+
+    td.tree-actions {
+      width: 10px;
+      padding: 0 5px;
+      cursor: pointer;
+    }
+  }
+
+  .list{
+
+  }
+  .tree{
+
+  }
+}

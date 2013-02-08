@@ -80,7 +80,9 @@ $ ->
     constructor: ->
       @object = ko.observable(null)
       @path = ko.observable(null)
-      location.hash = defaultPage if $('#main').length && location.hash.length == 0
+      I18n.defaultLocale = $("body").data("defaultLocale")
+      I18n.locale = $("body").data("locale")
+      location.hash = $("body").data("defaultPage") if $('#main').length && location.hash.length == 0
 
     templatePath: =>
       @path()

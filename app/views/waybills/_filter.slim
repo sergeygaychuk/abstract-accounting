@@ -1,0 +1,13 @@
+label = t('views.waybills.created_at')
+input type="text" id="filter_created_at" data-bind="value: filter.created"
+label = t('views.waybills.document_id')
+input type="text" id="filter_document_id" data-bind="value: filter.document_id"
+label = t('views.waybills.distributor')
+input type="text" id="filter_distributor" data-bind="value: filter.distributor"
+- if can?(:reverse, Waybill) && can?(:reverse, Allocation)
+  label = t('views.waybills.storekeeper')
+  input type="text" id="filter_storekeeper" data-bind="value: filter.storekeeper"
+  label = t('views.waybills.storekeeper_place')
+  input type="text" id="filter_storekeeper_place" data-bind="value: filter.storekeeper_place"
+label = t('views.waybills.resource.name')
+input type="text" id="filter_resource_name" data-bind="value: filter.resource_tag"

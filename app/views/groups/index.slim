@@ -1,0 +1,13 @@
+table
+  thead
+    tr
+      th id="tag" data-bind="click: sortBy">
+        = t('views.groups.tag')
+        span
+      th id="manager" data-bind="click: sortBy">
+        = t('views.groups.manager')
+        span
+  tbody data-bind="foreach: documents"
+    tr
+      td data-bind="text: tag, click: $parent.show"
+      td data-bind="text: manager_tag, click: $parent.show"

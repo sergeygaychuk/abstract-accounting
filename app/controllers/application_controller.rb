@@ -10,6 +10,7 @@
 class ApplicationController < ActionController::Base
   protect_from_forgery
   before_filter :set_locale, :require_login, :check_chart
+  helper_method :default_page
 
   def set_locale
     I18n.locale = params[:locale] || I18n.default_locale
@@ -65,6 +66,7 @@ class ApplicationController < ActionController::Base
       when CanCan::AccessDenied
         render :js => "window.location = '/#inbox'"
       else
+        ap e.backtrace
         render :json => { error: e.message}, :status => 500
     end
   end
@@ -83,4 +85,12 @@ class ApplicationController < ActionController::Base
   def check_chart
     render :js => "window.location = '/#settings/new'" unless Chart.count > 0
   end
+
+    def default_page
+      if current_user && !current_user.root? && can?(:manage, Waybill) && can?(:manage, Allocation)
+        "#warehouses"
+      else
+        "#inbox"
+      end
+    end
 end

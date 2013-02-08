@@ -1,0 +1,44 @@
+- content_for :search  do
+  label = t('views.warehouses.foremen.report.resource.name')
+  input type="text" id="filter-tag" data-bind="value: filter.tag"
+  label = t('views.warehouses.foremen.report.resource.mu')
+  input type="text" id="filter-mu" data-bind="value: filter.mu"
+  label = t('views.warehouses.foremen.report.amount')
+  input type="text" id="filter-amount" data-bind="value: filter.amount"
+
+div.actions
+  label for="foremen_filter_from"
+    = t('views.warehouses.foremen.report.dates.from')
+      | :
+  input [type="text" id="foremen_filter_from" style="width: 80px;"
+         data-bind="datepicker:{ value: from, maxDate: '+0' }, event: {change: filterData}"]
+  label for="foremen_filter_to"
+    = t('views.warehouses.foremen.report.dates.to')
+      | :
+  input [type="text" id="foremen_filter_to" style="width: 80px;"
+         data-bind="datepicker:{ value: to, maxDate: '+0' }, event: {change: filterData}"]
+  input [type="button" value="#{t('views.warehouses.report.print')}" id="print"
+         data-bind="visible: documents().length > 0, click: print"]
+table
+  thead
+    tr
+      th#tag data-bind="click: sortBy"
+        = t('views.warehouses.foremen.report.resource.name')
+        span
+      th#mu data-bind="click: sortBy"
+        = t('views.warehouses.foremen.report.resource.mu')
+        span
+      th#amount data-bind="click: sortBy"
+        = t('views.warehouses.foremen.report.amount')
+        span
+      th
+        = t('views.warehouses.foremen.report.price')
+      th
+        = t('views.warehouses.foremen.report.sum')
+  tbody data-bind="foreach: documents"
+    tr
+      td data-bind="text: tag"
+      td data-bind="text: mu"
+      td data-bind="text: amount"
+      td data-bind="text: price"
+      td data-bind="text: sum"

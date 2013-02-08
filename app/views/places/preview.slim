@@ -1,0 +1,29 @@
+form data-bind="validate: { success: save }"
+  .actions
+    = render :partial => "home/buttons", :locals => { :editable => true }
+
+  span#page-title
+    /! ko if: readonly
+    = t('views.places.page.title.show')
+    /! /ko
+    /! ko ifnot: readonly
+    /! ko if: id_presence
+    = t('views.places.page.title.edit')
+    /! /ko
+    /! ko ifnot: id_presence
+    = t('views.places.page.title.new')
+    /! /ko
+    /! /ko
+
+  = render 'home/errors'
+
+  fieldset
+    div
+      div
+        span.form-cell-label
+          label for="place_tag" = t('views.places.tag')
+            | :
+        span
+          input [type="text" id="place_tag"
+                 name="#{t('views.places.tag')}" rule="required"
+                 data-bind="value: object.place.tag, disable: readonly"]
